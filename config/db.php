@@ -2,7 +2,7 @@
 $host = 'localhost';
 $db   = 'taskflow_db';
 $user = 'root';
-$pass = ''; // Default XAMPP password is empty
+$pass = ''; 
 $charset = 'utf8mb4';
 
 $dsn = "mysql:host=$host;dbname=$db;charset=$charset";
