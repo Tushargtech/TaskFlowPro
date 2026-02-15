@@ -33,7 +33,7 @@ INSERT INTO user_roles (role_id, role_title, role_status) VALUES
 
 
 INSERT INTO users (user_login, user_email, user_password, user_role_id) VALUES 
-('admin_user', 'admin@taskflow.com', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 1);
+('admin_user', 'admin@taskflow.com', '$2y$10$bPBuJWImOODXwS.U5AHZCOh7jGbR2bhRNem3I9zuk9ZcP6OMbnY6O', 1);
 
 
 CREATE TABLE user_access_rights (
