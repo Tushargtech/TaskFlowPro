@@ -32,6 +32,45 @@ class User
         return false;
     }
 
+    public function getAllUsers(): array
+    {
+        $stmt = $this->pdo->prepare(
+            "SELECT u.*, r.role_title
+             FROM users u
+             JOIN user_roles r ON u.user_role_id = r.role_id
+             ORDER BY u.user_created_on DESC"
+        );
+
+        $stmt->execute();
+
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    }
+
+    public function createUser(array $data): bool
+    {
+        if (session_status() !== PHP_SESSION_ACTIVE) {
+            session_start();
+        }
+
+        $hashedPassword = password_hash($data['password'], PASSWORD_BCRYPT);
+
+        $sql = "INSERT INTO users (user_login, user_email, user_password, user_first_name, user_last_name, user_role_id, user_status, user_created_by)
+                VALUES (:login, :email, :password, :fname, :lname, :role, :status, :created_by)";
+
+        $stmt = $this->pdo->prepare($sql);
+
+        return $stmt->execute([
+            'login' => $data['login'],
+            'email' => $data['email'],
+            'password' => $hashedPassword,
+            'fname' => $data['first_name'],
+            'lname' => $data['last_name'],
+            'role' => $data['role_id'],
+            'status' => $data['status'],
+            'created_by' => $_SESSION['user_id'] ?? null,
+        ]);
+    }
+
     public function logout(): void
     {
         if (session_status() !== PHP_SESSION_ACTIVE) {

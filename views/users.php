@@ -4,16 +4,17 @@ declare(strict_types=1);
 
 require_once __DIR__ . '/../config/db.php';
 require_once __DIR__ . '/../src/includes/auth_middleware.php';
+require_once __DIR__ . '/../src/classes/User.php';
 
 if (($_SESSION['user_role'] ?? null) !== 1) {
-    header('Location: dashboard.php');
-    exit();
+  header('Location: dashboard.php');
+  exit();
 }
 
-include __DIR__ . '/../src/includes/header.php';
+$userObj = new User($pdo);
+$users = $userObj->getAllUsers();
 
-$query = 'SELECT u.user_first_name, u.user_last_name, u.user_email, u.user_status, r.role_title FROM users u JOIN user_roles r ON u.user_role_id = r.role_id';
-$users = $pdo->query($query)->fetchAll();
+include __DIR__ . '/../src/includes/header.php';
 ?>
 
 <div class="d-flex justify-content-between align-items-center mb-4">
@@ -64,6 +65,59 @@ $users = $pdo->query($query)->fetchAll();
         <?php endforeach; ?>
       </tbody>
     </table>
+  </div>
+</div>
+
+<div class="modal fade" id="addUserModal" tabindex="-1" aria-labelledby="addUserModalLabel" aria-hidden="true">
+  <div class="modal-dialog">
+    <form action="../src/processes/user_create.php" method="post" class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="addUserModalLabel">Add New Employee</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <div class="row g-3">
+          <div class="col-md-6">
+            <label class="form-label" for="first_name">First Name</label>
+            <input type="text" id="first_name" name="first_name" class="form-control" required>
+          </div>
+          <div class="col-md-6">
+            <label class="form-label" for="last_name">Last Name</label>
+            <input type="text" id="last_name" name="last_name" class="form-control" required>
+          </div>
+          <div class="col-12">
+            <label class="form-label" for="email">Email</label>
+            <input type="email" id="email" name="email" class="form-control" required>
+          </div>
+          <div class="col-md-6">
+            <label class="form-label" for="login">Username</label>
+            <input type="text" id="login" name="login" class="form-control" required>
+          </div>
+          <div class="col-md-6">
+            <label class="form-label" for="role_id">Role</label>
+            <select id="role_id" name="role_id" class="form-select">
+              <option value="1">Admin</option>
+              <option value="2">User</option>
+            </select>
+          </div>
+          <div class="col-12">
+            <label class="form-label" for="password">Password</label>
+            <input type="password" id="password" name="password" class="form-control" required>
+          </div>
+          <div class="col-12">
+            <label class="form-label" for="status">Status</label>
+            <select id="status" name="status" class="form-select">
+              <option value="Active">Active</option>
+              <option value="Inactive">Inactive</option>
+            </select>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+        <button type="submit" class="btn btn-primary">Save Employee</button>
+      </div>
+    </form>
   </div>
 </div>
 
