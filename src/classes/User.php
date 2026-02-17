@@ -71,6 +71,40 @@ class User
         ]);
     }
 
+    public function deactivateUser(int $id, int $modifierId): bool
+    {
+        $stmt = $this->pdo->prepare(
+            "UPDATE users SET user_status = 'Inactive', user_modified_by = ? WHERE user_id = ?"
+        );
+
+        return $stmt->execute([$modifierId, $id]);
+    }
+
+    public function updateUser(array $data): bool
+    {
+        $sql = "UPDATE users SET
+                user_first_name = :fname,
+                user_last_name = :lname,
+                user_email = :email,
+                user_role_id = :role,
+                user_status = :status,
+                user_modified_by = :mod_by
+                WHERE user_id = :id";
+
+        $stmt = $this->pdo->prepare($sql);
+
+        return $stmt->execute($data);
+    }
+
+    public function logLogin(int $userId): bool
+    {
+        $stmt = $this->pdo->prepare(
+            "INSERT INTO user_login_records (login_user_id, login_date_time) VALUES (?, NOW())"
+        );
+
+        return $stmt->execute([$userId]);
+    }
+
     public function logout(): void
     {
         if (session_status() !== PHP_SESSION_ACTIVE) {

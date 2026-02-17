@@ -36,6 +36,18 @@ INSERT INTO users (user_login, user_email, user_password, user_role_id) VALUES
 ('admin_user', 'admin@taskflow.com', '$2y$10$bPBuJWImOODXwS.U5AHZCOh7jGbR2bhRNem3I9zuk9ZcP6OMbnY6O', 1);
 
 
+CREATE TABLE user_login_records (
+    login_id INT PRIMARY KEY AUTO_INCREMENT,
+    login_user_id INT NOT NULL,
+    login_date_time TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    login_ip VARCHAR(45),
+    CONSTRAINT fk_login_user
+        FOREIGN KEY (login_user_id)
+        REFERENCES users(user_id)
+        ON DELETE CASCADE
+);
+
+
 CREATE TABLE user_access_rights (
     right_id INT PRIMARY KEY AUTO_INCREMENT,
     right_title VARCHAR(50) NOT NULL,

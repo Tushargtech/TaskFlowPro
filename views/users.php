@@ -14,8 +14,44 @@ if (($_SESSION['user_role'] ?? null) !== 1) {
 $userObj = new User($pdo);
 $users = $userObj->getAllUsers();
 
+$messages = [
+  'success' => [
+    'user_added' => 'Employee added successfully.',
+    'user_updated' => 'Employee updated successfully.',
+    'deactivated' => 'Employee deactivated successfully.',
+  ],
+  'error' => [
+    'empty_fields' => 'Please fill in all required fields.',
+    'failed' => 'Operation failed. Please try again.',
+    'creation_failed' => 'Could not create employee. Possibly duplicate email or username.',
+    'update_failed' => 'Could not update employee. Please review the details.',
+    'invalid_user' => 'Invalid employee selected.',
+    'missing_parameters' => 'Required details were missing for that action.',
+  ],
+];
+
+$alert = null;
+foreach (['success', 'error'] as $type) {
+  if (isset($_GET[$type])) {
+    $code = $_GET[$type];
+    if (isset($messages[$type][$code])) {
+      $alert = ['type' => $type, 'message' => $messages[$type][$code]];
+    }
+    break;
+  }
+}
+
+$editModals = [];
+
 include __DIR__ . '/../src/includes/header.php';
 ?>
+
+<?php if ($alert): ?>
+  <div class="alert alert-<?php echo $alert['type'] === 'success' ? 'success' : 'danger'; ?> alert-dismissible fade show" role="alert">
+    <?php echo htmlspecialchars($alert['message'], ENT_QUOTES, 'UTF-8'); ?>
+    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+  </div>
+<?php endif; ?>
 
 <div class="d-flex justify-content-between align-items-center mb-4">
   <h2><i class="bi bi-people"></i> Employee Management</h2>
@@ -39,29 +75,92 @@ include __DIR__ . '/../src/includes/header.php';
       </thead>
       <tbody>
         <?php foreach ($users as $user): ?>
+        <?php
+          $userId = (int) ($user['user_id'] ?? 0);
+          $firstName = htmlspecialchars($user['user_first_name'] ?? '', ENT_QUOTES, 'UTF-8');
+          $lastName = htmlspecialchars($user['user_last_name'] ?? '', ENT_QUOTES, 'UTF-8');
+          $fullName = trim($firstName . ' ' . $lastName);
+          $userEmail = htmlspecialchars($user['user_email'] ?? '', ENT_QUOTES, 'UTF-8');
+          $roleTitle = htmlspecialchars($user['role_title'] ?? '', ENT_QUOTES, 'UTF-8');
+          $isActive = ($user['user_status'] === 'Active');
+          $statusBadge = $isActive ? 'bg-success' : 'bg-danger';
+
+          ob_start();
+          ?>
+          <div class="modal fade" id="editUser<?php echo $userId; ?>" tabindex="-1" aria-labelledby="editUserLabel<?php echo $userId; ?>" aria-hidden="true">
+            <div class="modal-dialog">
+              <form action="../src/processes/user_update.php" method="post" class="modal-content">
+                <input type="hidden" name="user_id" value="<?php echo $userId; ?>">
+                <div class="modal-header">
+                  <h5 class="modal-title" id="editUserLabel<?php echo $userId; ?>">Edit Employee: <?php echo $firstName; ?></h5>
+                  <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                  <div class="row g-3">
+                    <div class="col-md-6">
+                      <label class="form-label" for="edit_first_name_<?php echo $userId; ?>">First Name</label>
+                      <input type="text" id="edit_first_name_<?php echo $userId; ?>" name="first_name" class="form-control" value="<?php echo $firstName; ?>" required>
+                    </div>
+                    <div class="col-md-6">
+                      <label class="form-label" for="edit_last_name_<?php echo $userId; ?>">Last Name</label>
+                      <input type="text" id="edit_last_name_<?php echo $userId; ?>" name="last_name" class="form-control" value="<?php echo $lastName; ?>" required>
+                    </div>
+                    <div class="col-12">
+                      <label class="form-label" for="edit_email_<?php echo $userId; ?>">Email</label>
+                      <input type="email" id="edit_email_<?php echo $userId; ?>" name="email" class="form-control" value="<?php echo $userEmail; ?>" required>
+                    </div>
+                    <div class="col-md-6">
+                      <label class="form-label" for="edit_status_<?php echo $userId; ?>">Status</label>
+                      <select id="edit_status_<?php echo $userId; ?>" name="status" class="form-select">
+                        <option value="Active" <?php echo $user['user_status'] === 'Active' ? 'selected' : ''; ?>>Active</option>
+                        <option value="Inactive" <?php echo $user['user_status'] === 'Inactive' ? 'selected' : ''; ?>>Inactive</option>
+                      </select>
+                    </div>
+                    <div class="col-md-6">
+                      <label class="form-label" for="edit_role_<?php echo $userId; ?>">Role</label>
+                      <select id="edit_role_<?php echo $userId; ?>" name="role_id" class="form-select">
+                        <option value="1" <?php echo ((int) ($user['user_role_id'] ?? 0) === 1) ? 'selected' : ''; ?>>Admin</option>
+                        <option value="2" <?php echo ((int) ($user['user_role_id'] ?? 0) === 2) ? 'selected' : ''; ?>>User</option>
+                      </select>
+                    </div>
+                  </div>
+                </div>
+                <div class="modal-footer">
+                  <button type="submit" class="btn btn-primary">Update Changes</button>
+                </div>
+              </form>
+            </div>
+          </div>
+          <?php
+          $editModals[] = ob_get_clean();
+        ?>
         <tr>
-          <td><?php echo htmlspecialchars(trim($user['user_first_name'] . ' ' . $user['user_last_name']), ENT_QUOTES, 'UTF-8'); ?></td>
-          <td><?php echo htmlspecialchars($user['user_email'], ENT_QUOTES, 'UTF-8'); ?></td>
+          <td><?php echo $fullName; ?></td>
+          <td><?php echo $userEmail; ?></td>
           <td>
             <span class="badge bg-info text-dark">
-              <?php echo htmlspecialchars($user['role_title'], ENT_QUOTES, 'UTF-8'); ?>
+              <?php echo $roleTitle; ?>
             </span>
           </td>
           <td>
-            <?php $isActive = ($user['user_status'] === 'Active'); ?>
-            <span class="badge <?php echo $isActive ? 'bg-success' : 'bg-danger'; ?>">
+            <span class="badge <?php echo $statusBadge; ?>">
               <?php echo htmlspecialchars($user['user_status'], ENT_QUOTES, 'UTF-8'); ?>
             </span>
           </td>
           <td>
-            <button class="btn btn-sm btn-outline-secondary" type="button" disabled>
+            <button class="btn btn-sm btn-outline-primary" type="button" data-bs-toggle="modal" data-bs-target="#editUser<?php echo $userId; ?>">
               <i class="bi bi-pencil"></i>
             </button>
-            <button class="btn btn-sm btn-outline-danger" type="button" disabled>
+            <a
+              href="../src/processes/user_deactivate.php?id=<?php echo $userId; ?>"
+              class="btn btn-sm btn-outline-danger"
+              onclick="return confirm('Are you sure you want to deactivate this employee?');"
+            >
               <i class="bi bi-trash"></i>
-            </button>
+            </a>
           </td>
         </tr>
+
         <?php endforeach; ?>
       </tbody>
     </table>
@@ -120,5 +219,11 @@ include __DIR__ . '/../src/includes/header.php';
     </form>
   </div>
 </div>
+
+  <?php
+  foreach ($editModals as $modalHtml) {
+    echo $modalHtml;
+  }
+  ?>
 
 <?php include __DIR__ . '/../src/includes/footer.php'; ?>

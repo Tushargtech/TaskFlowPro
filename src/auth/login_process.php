@@ -12,6 +12,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $user = new User($pdo);
 
     if ($user->login($email, $password)) {
+        $userId = $_SESSION['user_id'] ?? null;
+
+        if ($userId !== null) {
+            $user->logLogin((int) $userId);
+        }
+
         header('Location: ../../views/dashboard.php');
         exit();
     }

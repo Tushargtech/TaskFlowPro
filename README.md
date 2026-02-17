@@ -7,13 +7,18 @@
 * **Server:** Apache (LAMPP Stack)
 
 ## Features Implemented
-* **Auth:** Role-Based Access Control (Admin/User).
-* **Modules:** Employee, Project, and Task Management.
-* **Security:** Password hashing (Bcrypt) and PDO Prepared Statements.
-* **API:** REST-style endpoints for all CRUD operations.
+* **Authentication:** Email-based login with BCrypt, PDO prepared statements, and login activity tracking (user_login_records).
+* **Authorization:** Role-Based Access Control (Admin/User) with middleware protection on all dashboard modules.
+* **Employee Management:** Bootstrap table with create, edit, and soft-delete workflows backed by dedicated process scripts.
+* **Project & Task Management:** Dashboard analytics, project cards, and per-user task views ready for future CRUD enhancements.
+* **UI Framework:** Shared header/footer components, responsive Bootstrap 5 layout, and role-aware navigation.
 
-## Database Design (Day 2 Decision)
-I chose a relational structure with 7 tables to handle complex task assignments. 
-Key decisions:
-* Used `ON DELETE CASCADE` for tasks to ensure data integrity.
-* Implemented `user_role_mapping` for future-proof permission scaling.
+## Database Highlights
+* Normalized MySQL schema with foreign keys and cascading rules (projects → tasks).
+* Seed data includes admin role, base user, and RBAC scaffolding for future permissions.
+* Added user_login_records table for audit trails and compliance reporting.
+
+## Recent Updates
+* Implemented user soft delete (status toggle) and edit modals that persist changes via PDO.
+* Added user_create and user_update process scripts with validation and exception logging.
+* Logging each successful login to user_login_records to track activity.
