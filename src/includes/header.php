@@ -66,7 +66,12 @@ $userRole = $_SESSION['user_role'] ?? null;
             </li>
           </ul>
           <div class="navbar-nav">
-            <span class="nav-link text-light">Hi, <?php echo htmlspecialchars($firstName, ENT_QUOTES, 'UTF-8'); ?></span>
+            <form class="d-flex me-3" role="search">
+              <input class="form-control form-control-sm" type="search" placeholder="Search..." aria-label="Search">
+              <button class="btn btn-outline-light btn-sm ms-2" type="submit">
+                <i class="bi bi-search"></i>
+              </button>
+            </form>
             <a class="nav-link btn btn-outline-danger btn-sm ms-lg-2 text-white" href="../src/auth/logout.php">Logout</a>
           </div>
         </div>
