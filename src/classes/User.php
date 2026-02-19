@@ -46,6 +46,21 @@ class User
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
 
+    public function getUserById(int $id): ?array
+    {
+        $stmt = $this->pdo->prepare(
+            "SELECT u.*, r.role_title
+             FROM users u
+             JOIN user_roles r ON u.user_role_id = r.role_id
+             WHERE u.user_id = :id"
+        );
+
+        $stmt->execute(['id' => $id]);
+        $user = $stmt->fetch(PDO::FETCH_ASSOC);
+
+        return $user ?: null;
+    }
+
     public function createUser(array $data): bool
     {
         if (session_status() !== PHP_SESSION_ACTIVE) {

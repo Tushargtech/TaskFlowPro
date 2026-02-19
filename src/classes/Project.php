@@ -18,6 +18,20 @@ class Project
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
 
+    public function getProjectById(int $id): ?array
+    {
+        $stmt = $this->pdo->prepare(
+            'SELECT project_id, project_title, project_description, project_status, project_created_on
+             FROM projects
+             WHERE project_id = :id'
+        );
+
+        $stmt->execute(['id' => $id]);
+        $project = $stmt->fetch(PDO::FETCH_ASSOC);
+
+        return $project ?: null;
+    }
+
     public function createProject(string $title, ?string $description, int $createdBy, string $status = 'Active'): bool
     {
         $stmt = $this->pdo->prepare(

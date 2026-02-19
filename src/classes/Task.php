@@ -36,6 +36,25 @@ class Task
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
 
+    public function getTaskById(int $id): ?array
+    {
+        $stmt = $this->pdo->prepare(
+            'SELECT t.task_id, t.task_title, t.task_description, t.task_due_date, t.task_status,
+                    t.task_assigned_to, t.task_project_id,
+                    p.project_title,
+                    CONCAT(COALESCE(u.user_first_name, ""), " ", COALESCE(u.user_last_name, "")) AS assigned_name
+             FROM tasks t
+             JOIN projects p ON t.task_project_id = p.project_id
+             LEFT JOIN users u ON t.task_assigned_to = u.user_id
+             WHERE t.task_id = :id'
+        );
+
+        $stmt->execute(['id' => $id]);
+        $task = $stmt->fetch(PDO::FETCH_ASSOC);
+
+        return $task ?: null;
+    }
+
     public function createTask(array $data): bool
     {
         $stmt = $this->pdo->prepare(
