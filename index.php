@@ -1,3 +1,12 @@
+<?php
+if (session_status() === PHP_SESSION_NONE) {
+  session_start();
+}
+
+if (empty($_SESSION['csrf_token'])) {
+  $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
+}
+?>
 <!doctype html>
 <html lang="en">
   <head>
@@ -20,6 +29,7 @@
               <div class="card-body p-4 p-sm-5">
                 <h2 class="text-center mb-4">TaskFlow Pro</h2>
                 <form action="src/auth/login_process.php" method="post" novalidate>
+                  <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars($_SESSION['csrf_token'], ENT_QUOTES, 'UTF-8'); ?>">
                   <div class="mb-3">
                     <label for="email" class="form-label">Email address</label>
                     <input type="email" id="email" name="email" class="form-control" required>

@@ -72,6 +72,7 @@ $messages = [
   'error' => [
     'unauthorized' => 'You are not authorized to perform that action.',
     'invalid_input' => 'Please complete all required fields before submitting.',
+    'past_date' => 'Due date cannot be in the past.',
     'task_failed' => 'Unable to assign the task. Please try again.',
     'task_exception' => 'Unexpected error assigning the task.',
     'missing_task' => 'Task reference was missing from the request.',
@@ -130,7 +131,7 @@ include __DIR__ . '/../src/includes/header.php';
     <div class="card border-0 shadow-sm h-100">
       <div class="card-body">
         <p class="text-muted text-uppercase small mb-1">Total Tasks</p>
-        <h3 class="fw-semibold mb-0"><?php echo $summary['total']; ?></h3>
+        <h3 class="fw-semibold mb-0"><?php echo htmlspecialchars((string) $summary['total'], ENT_QUOTES, 'UTF-8'); ?></h3>
       </div>
     </div>
   </div>
@@ -138,7 +139,7 @@ include __DIR__ . '/../src/includes/header.php';
     <div class="card border-0 shadow-sm h-100">
       <div class="card-body">
         <p class="text-muted text-uppercase small mb-1">Completed</p>
-        <h3 class="fw-semibold text-success mb-0"><?php echo $summary['completed']; ?></h3>
+        <h3 class="fw-semibold text-success mb-0"><?php echo htmlspecialchars((string) $summary['completed'], ENT_QUOTES, 'UTF-8'); ?></h3>
       </div>
     </div>
   </div>
@@ -146,7 +147,7 @@ include __DIR__ . '/../src/includes/header.php';
     <div class="card border-0 shadow-sm h-100">
       <div class="card-body">
         <p class="text-muted text-uppercase small mb-1">Due Soon</p>
-        <h3 class="fw-semibold text-primary mb-0"><?php echo $summary['dueSoon']; ?></h3>
+        <h3 class="fw-semibold text-primary mb-0"><?php echo htmlspecialchars((string) $summary['dueSoon'], ENT_QUOTES, 'UTF-8'); ?></h3>
       </div>
     </div>
   </div>
@@ -154,7 +155,7 @@ include __DIR__ . '/../src/includes/header.php';
     <div class="card border-0 shadow-sm h-100">
       <div class="card-body">
         <p class="text-muted text-uppercase small mb-1">Overdue</p>
-        <h3 class="fw-semibold text-danger mb-0"><?php echo $summary['overdue']; ?></h3>
+        <h3 class="fw-semibold text-danger mb-0"><?php echo htmlspecialchars((string) $summary['overdue'], ENT_QUOTES, 'UTF-8'); ?></h3>
       </div>
     </div>
   </div>
@@ -164,7 +165,7 @@ include __DIR__ . '/../src/includes/header.php';
   <div class="table-responsive">
     <table class="table table-hover align-middle mb-0">
       <thead class="table-light">
-        <tr id="task-row-<?php echo $taskId; ?>">
+        <tr>
           <th style="width:24%">Task</th>
           <th style="width:18%">Project</th>
           <th style="width:18%">Assigned To</th>
@@ -182,6 +183,7 @@ include __DIR__ . '/../src/includes/header.php';
         <?php foreach ($tasks as $task): ?>
         <?php
           $taskId = (int) $task['task_id'];
+          $taskIdEsc = htmlspecialchars((string) $taskId, ENT_QUOTES, 'UTF-8');
           $title = $task['task_title'] ?? '';
           $status = $task['task_status'] ?? 'Pending';
           $assignedName = trim((string) ($task['assigned_name'] ?? '')) ?: 'Unassigned';
@@ -198,7 +200,7 @@ include __DIR__ . '/../src/includes/header.php';
 
           $dueRaw = $task['task_due_date'] ?? null;
           $dueDisplay = $dueRaw ? date('M d, Y', strtotime($dueRaw)) : 'No due date';
-          $dueContext = '';
+          $dueBadge = null;
 
           if ($dueRaw && !$isCompleted) {
               $dueDateObject = DateTimeImmutable::createFromFormat('Y-m-d', $dueRaw);
@@ -207,16 +209,17 @@ include __DIR__ . '/../src/includes/header.php';
               }
 
               if ($dueDateObject < $today) {
-                  $dueContext = '<span class="badge bg-danger ms-2">Overdue</span>';
+                  $dueBadge = 'overdue';
               } elseif ($dueDateObject <= $dueSoonThreshold) {
-                  $dueContext = '<span class="badge bg-warning text-dark ms-2">Due Soon</span>';
+                  $dueBadge = 'dueSoon';
               }
           }
 
           $description = trim((string) ($task['task_description'] ?? ''));
           $descriptionPreview = $description !== '' ? mb_strimwidth($description, 0, 80, '…') : 'No description provided.';
+          $statusClassEsc = htmlspecialchars($statusClass, ENT_QUOTES, 'UTF-8');
         ?>
-        <tr>
+        <tr id="task-row-<?php echo $taskIdEsc; ?>">
           <td>
             <strong><?php echo htmlspecialchars($title, ENT_QUOTES, 'UTF-8'); ?></strong>
             <p class="text-muted small mb-0"><?php echo htmlspecialchars($descriptionPreview, ENT_QUOTES, 'UTF-8'); ?></p>
@@ -225,22 +228,26 @@ include __DIR__ . '/../src/includes/header.php';
           <td><i class="bi bi-person-circle me-1"></i><?php echo htmlspecialchars($assignedName, ENT_QUOTES, 'UTF-8'); ?></td>
           <td>
             <?php echo htmlspecialchars($dueDisplay, ENT_QUOTES, 'UTF-8'); ?>
-            <?php if ($dueContext !== ''): ?><?php echo $dueContext; ?><?php endif; ?>
+            <?php if ($dueBadge === 'overdue'): ?>
+              <span class="badge bg-danger ms-2">Overdue</span>
+            <?php elseif ($dueBadge === 'dueSoon'): ?>
+              <span class="badge bg-warning text-dark ms-2">Due Soon</span>
+            <?php endif; ?>
           </td>
           <td>
-            <span class="badge <?php echo $statusClass; ?>"><?php echo htmlspecialchars($status, ENT_QUOTES, 'UTF-8'); ?></span>
+            <span class="badge <?php echo $statusClassEsc; ?>"><?php echo htmlspecialchars($status, ENT_QUOTES, 'UTF-8'); ?></span>
           </td>
           <td class="text-center">
             <?php if ($isAdmin): ?>
             <div class="btn-group btn-group-sm" role="group">
-              <button type="button" class="btn btn-outline-secondary" data-bs-toggle="modal" data-bs-target="#editTaskModal<?php echo $taskId; ?>">Edit</button>
+              <button type="button" class="btn btn-outline-secondary" data-bs-toggle="modal" data-bs-target="#editTaskModal<?php echo $taskIdEsc; ?>">Edit</button>
               <?php if ($canComplete): ?>
-              <a class="btn btn-success" href="../src/processes/task_complete.php?id=<?php echo $taskId; ?>">Done</a>
+              <a class="btn btn-success" href="../src/processes/task_complete.php?id=<?php echo $taskIdEsc; ?>">Done</a>
               <?php endif; ?>
-              <button type="button" class="btn btn-outline-danger" onclick="deleteTask(<?php echo $taskId; ?>)">Delete</button>
+              <button type="button" class="btn btn-outline-danger" onclick="deleteTask(<?php echo $taskIdEsc; ?>)">Delete</button>
             </div>
             <?php elseif ($canComplete): ?>
-            <a class="btn btn-sm btn-success" href="../src/processes/task_complete.php?id=<?php echo $taskId; ?>">Done</a>
+            <a class="btn btn-sm btn-success" href="../src/processes/task_complete.php?id=<?php echo $taskIdEsc; ?>">Done</a>
             <?php elseif ($isCompleted): ?>
             <i class="bi bi-check-all text-success"></i>
             <?php else: ?>
@@ -250,52 +257,54 @@ include __DIR__ . '/../src/includes/header.php';
         </tr>
         <?php if ($isAdmin):
           $modalId = 'editTaskModal' . $taskId;
+          $modalIdEsc = htmlspecialchars($modalId, ENT_QUOTES, 'UTF-8');
           ob_start();
         ?>
-        <div class="modal fade" id="<?php echo $modalId; ?>" tabindex="-1" aria-labelledby="<?php echo $modalId; ?>Label" aria-hidden="true">
+        <div class="modal fade" id="<?php echo $modalIdEsc; ?>" tabindex="-1" aria-labelledby="<?php echo $modalIdEsc; ?>Label" aria-hidden="true">
           <div class="modal-dialog">
             <form action="../src/processes/task_update.php" method="post" class="modal-content">
-              <input type="hidden" name="task_id" value="<?php echo $taskId; ?>">
+              <input type="hidden" name="task_id" value="<?php echo $taskIdEsc; ?>">
+              <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars($_SESSION['csrf_token'], ENT_QUOTES, 'UTF-8'); ?>">
               <div class="modal-header">
-                <h5 class="modal-title" id="<?php echo $modalId; ?>Label">Update Task</h5>
+                <h5 class="modal-title" id="<?php echo $modalIdEsc; ?>Label">Update Task</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
               </div>
               <div class="modal-body">
                 <div class="mb-3">
-                  <label class="form-label" for="task_title_<?php echo $taskId; ?>">Task Title</label>
-                  <input type="text" id="task_title_<?php echo $taskId; ?>" name="task_title" class="form-control" value="<?php echo htmlspecialchars($title, ENT_QUOTES, 'UTF-8'); ?>" required>
+                  <label class="form-label" for="task_title_<?php echo $taskIdEsc; ?>">Task Title</label>
+                  <input type="text" id="task_title_<?php echo $taskIdEsc; ?>" name="task_title" class="form-control" value="<?php echo htmlspecialchars($title, ENT_QUOTES, 'UTF-8'); ?>" required>
                 </div>
                 <div class="mb-3">
-                  <label class="form-label" for="task_description_<?php echo $taskId; ?>">Description</label>
-                  <textarea id="task_description_<?php echo $taskId; ?>" name="task_description" class="form-control" rows="3" placeholder="Optional details"><?php echo htmlspecialchars($description, ENT_QUOTES, 'UTF-8'); ?></textarea>
+                  <label class="form-label" for="task_description_<?php echo $taskIdEsc; ?>">Description</label>
+                  <textarea id="task_description_<?php echo $taskIdEsc; ?>" name="task_description" class="form-control" rows="3" placeholder="Optional details"><?php echo htmlspecialchars($description, ENT_QUOTES, 'UTF-8'); ?></textarea>
                 </div>
                 <div class="mb-3">
-                  <label class="form-label" for="task_project_<?php echo $taskId; ?>">Project</label>
-                  <select id="task_project_<?php echo $taskId; ?>" name="project_id" class="form-select" required>
+                  <label class="form-label" for="task_project_<?php echo $taskIdEsc; ?>">Project</label>
+                  <select id="task_project_<?php echo $taskIdEsc; ?>" name="project_id" class="form-select" required>
                     <?php foreach ($projects as $project): ?>
-                    <option value="<?php echo (int) $project['project_id']; ?>" <?php echo ((int) $project['project_id'] === (int) ($task['task_project_id'] ?? 0)) ? 'selected' : ''; ?>>
+                    <option value="<?php echo htmlspecialchars((string) $project['project_id'], ENT_QUOTES, 'UTF-8'); ?>" <?php echo ((int) $project['project_id'] === (int) ($task['task_project_id'] ?? 0)) ? 'selected' : ''; ?>>
                       <?php echo htmlspecialchars($project['project_title'], ENT_QUOTES, 'UTF-8'); ?>
                     </option>
                     <?php endforeach; ?>
                   </select>
                 </div>
                 <div class="mb-3">
-                  <label class="form-label" for="task_assignee_<?php echo $taskId; ?>">Assign To</label>
-                  <select id="task_assignee_<?php echo $taskId; ?>" name="assigned_to" class="form-select" required>
+                  <label class="form-label" for="task_assignee_<?php echo $taskIdEsc; ?>">Assign To</label>
+                  <select id="task_assignee_<?php echo $taskIdEsc; ?>" name="assigned_to" class="form-select" required>
                     <?php foreach ($employees as $employee): ?>
-                    <option value="<?php echo (int) $employee['user_id']; ?>" <?php echo ((int) $employee['user_id'] === $assignedTo) ? 'selected' : ''; ?>>
+                    <option value="<?php echo htmlspecialchars((string) $employee['user_id'], ENT_QUOTES, 'UTF-8'); ?>" <?php echo ((int) $employee['user_id'] === $assignedTo) ? 'selected' : ''; ?>>
                       <?php echo htmlspecialchars(trim($employee['full_name']) ?: 'Unnamed User', ENT_QUOTES, 'UTF-8'); ?>
                     </option>
                     <?php endforeach; ?>
                   </select>
                 </div>
                 <div class="mb-3">
-                  <label class="form-label" for="task_due_date_<?php echo $taskId; ?>">Due Date</label>
-                  <input type="date" id="task_due_date_<?php echo $taskId; ?>" name="task_due_date" class="form-control" value="<?php echo htmlspecialchars($dueRaw ?? '', ENT_QUOTES, 'UTF-8'); ?>" required>
+                  <label class="form-label" for="task_due_date_<?php echo $taskIdEsc; ?>">Due Date</label>
+                  <input type="date" id="task_due_date_<?php echo $taskIdEsc; ?>" name="task_due_date" class="form-control" value="<?php echo htmlspecialchars($dueRaw ?? '', ENT_QUOTES, 'UTF-8'); ?>" required>
                 </div>
                 <div class="mb-3">
-                  <label class="form-label" for="task_status_<?php echo $taskId; ?>">Status</label>
-                  <select id="task_status_<?php echo $taskId; ?>" name="task_status" class="form-select" required>
+                  <label class="form-label" for="task_status_<?php echo $taskIdEsc; ?>">Status</label>
+                  <select id="task_status_<?php echo $taskIdEsc; ?>" name="task_status" class="form-select" required>
                     <?php foreach ($statusOptions as $statusOption): ?>
                     <option value="<?php echo htmlspecialchars($statusOption, ENT_QUOTES, 'UTF-8'); ?>" <?php echo $statusOption === $status ? 'selected' : ''; ?>>
                       <?php echo htmlspecialchars($statusOption, ENT_QUOTES, 'UTF-8'); ?>
@@ -326,6 +335,7 @@ include __DIR__ . '/../src/includes/header.php';
   <div class="modal fade" id="addTaskModal" tabindex="-1" aria-labelledby="addTaskModalLabel" aria-hidden="true">
     <div class="modal-dialog">
       <form action="../src/processes/task_create.php" method="post" class="modal-content">
+        <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars($_SESSION['csrf_token'], ENT_QUOTES, 'UTF-8'); ?>">
         <div class="modal-header">
           <h5 class="modal-title" id="addTaskModalLabel">Assign New Task</h5>
           <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
@@ -343,7 +353,7 @@ include __DIR__ . '/../src/includes/header.php';
             <label class="form-label" for="new_task_project">Project</label>
             <select id="new_task_project" name="project_id" class="form-select" <?php echo $canAssign ? 'required' : 'disabled'; ?>>
               <?php foreach ($projects as $project): ?>
-              <option value="<?php echo (int) $project['project_id']; ?>">
+                <option value="<?php echo htmlspecialchars((string) $project['project_id'], ENT_QUOTES, 'UTF-8'); ?>">
                 <?php echo htmlspecialchars($project['project_title'], ENT_QUOTES, 'UTF-8'); ?>
               </option>
               <?php endforeach; ?>
@@ -353,7 +363,7 @@ include __DIR__ . '/../src/includes/header.php';
             <label class="form-label" for="new_task_assignee">Assign To</label>
             <select id="new_task_assignee" name="assigned_to" class="form-select" <?php echo $canAssign ? 'required' : 'disabled'; ?>>
               <?php foreach ($employees as $employee): ?>
-              <option value="<?php echo (int) $employee['user_id']; ?>">
+                <option value="<?php echo htmlspecialchars((string) $employee['user_id'], ENT_QUOTES, 'UTF-8'); ?>">
                 <?php echo htmlspecialchars(trim($employee['full_name']) ?: 'Unnamed User', ENT_QUOTES, 'UTF-8'); ?>
               </option>
               <?php endforeach; ?>
@@ -363,7 +373,7 @@ include __DIR__ . '/../src/includes/header.php';
             <label class="form-label" for="new_task_due_date">Due Date</label>
             <input type="date" id="new_task_due_date" name="due_date" class="form-control" <?php echo $canAssign ? 'required' : 'disabled'; ?>>
           </div>
-          <input type="hidden" name="created_by" value="<?php echo $userId; ?>">
+          <input type="hidden" name="created_by" value="<?php echo htmlspecialchars((string) $userId, ENT_QUOTES, 'UTF-8'); ?>">
         </div>
         <div class="modal-footer">
           <button type="submit" class="btn btn-primary" <?php echo $canAssign ? '' : 'disabled'; ?>>Create Task</button>

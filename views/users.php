@@ -77,6 +77,7 @@ include __DIR__ . '/../src/includes/header.php';
         <?php foreach ($users as $user): ?>
         <?php
           $userId = (int) ($user['user_id'] ?? 0);
+          $userIdEsc = htmlspecialchars((string) $userId, ENT_QUOTES, 'UTF-8');
           $firstName = htmlspecialchars($user['user_first_name'] ?? '', ENT_QUOTES, 'UTF-8');
           $lastName = htmlspecialchars($user['user_last_name'] ?? '', ENT_QUOTES, 'UTF-8');
           $fullName = trim($firstName . ' ' . $lastName);
@@ -87,38 +88,39 @@ include __DIR__ . '/../src/includes/header.php';
 
           ob_start();
           ?>
-          <div class="modal fade" id="editUser<?php echo $userId; ?>" tabindex="-1" aria-labelledby="editUserLabel<?php echo $userId; ?>" aria-hidden="true">
+          <div class="modal fade" id="editUser<?php echo $userIdEsc; ?>" tabindex="-1" aria-labelledby="editUserLabel<?php echo $userIdEsc; ?>" aria-hidden="true">
             <div class="modal-dialog">
               <form action="../src/processes/user_update.php" method="post" class="modal-content">
-                <input type="hidden" name="user_id" value="<?php echo $userId; ?>">
+                <input type="hidden" name="user_id" value="<?php echo $userIdEsc; ?>">
+                <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars($_SESSION['csrf_token'], ENT_QUOTES, 'UTF-8'); ?>">
                 <div class="modal-header">
-                  <h5 class="modal-title" id="editUserLabel<?php echo $userId; ?>">Edit Employee: <?php echo $firstName; ?></h5>
+                  <h5 class="modal-title" id="editUserLabel<?php echo $userIdEsc; ?>">Edit Employee: <?php echo $firstName; ?></h5>
                   <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
                 <div class="modal-body">
                   <div class="row g-3">
                     <div class="col-md-6">
-                      <label class="form-label" for="edit_first_name_<?php echo $userId; ?>">First Name</label>
-                      <input type="text" id="edit_first_name_<?php echo $userId; ?>" name="first_name" class="form-control" value="<?php echo $firstName; ?>" required>
+                      <label class="form-label" for="edit_first_name_<?php echo $userIdEsc; ?>">First Name</label>
+                      <input type="text" id="edit_first_name_<?php echo $userIdEsc; ?>" name="first_name" class="form-control" value="<?php echo $firstName; ?>" required>
                     </div>
                     <div class="col-md-6">
-                      <label class="form-label" for="edit_last_name_<?php echo $userId; ?>">Last Name</label>
-                      <input type="text" id="edit_last_name_<?php echo $userId; ?>" name="last_name" class="form-control" value="<?php echo $lastName; ?>" required>
+                      <label class="form-label" for="edit_last_name_<?php echo $userIdEsc; ?>">Last Name</label>
+                      <input type="text" id="edit_last_name_<?php echo $userIdEsc; ?>" name="last_name" class="form-control" value="<?php echo $lastName; ?>" required>
                     </div>
                     <div class="col-12">
-                      <label class="form-label" for="edit_email_<?php echo $userId; ?>">Email</label>
-                      <input type="email" id="edit_email_<?php echo $userId; ?>" name="email" class="form-control" value="<?php echo $userEmail; ?>" required>
+                      <label class="form-label" for="edit_email_<?php echo $userIdEsc; ?>">Email</label>
+                      <input type="email" id="edit_email_<?php echo $userIdEsc; ?>" name="email" class="form-control" value="<?php echo $userEmail; ?>" required>
                     </div>
                     <div class="col-md-6">
-                      <label class="form-label" for="edit_status_<?php echo $userId; ?>">Status</label>
-                      <select id="edit_status_<?php echo $userId; ?>" name="status" class="form-select">
+                      <label class="form-label" for="edit_status_<?php echo $userIdEsc; ?>">Status</label>
+                      <select id="edit_status_<?php echo $userIdEsc; ?>" name="status" class="form-select">
                         <option value="Active" <?php echo $user['user_status'] === 'Active' ? 'selected' : ''; ?>>Active</option>
                         <option value="Inactive" <?php echo $user['user_status'] === 'Inactive' ? 'selected' : ''; ?>>Inactive</option>
                       </select>
                     </div>
                     <div class="col-md-6">
-                      <label class="form-label" for="edit_role_<?php echo $userId; ?>">Role</label>
-                      <select id="edit_role_<?php echo $userId; ?>" name="role_id" class="form-select">
+                      <label class="form-label" for="edit_role_<?php echo $userIdEsc; ?>">Role</label>
+                      <select id="edit_role_<?php echo $userIdEsc; ?>" name="role_id" class="form-select">
                         <option value="1" <?php echo ((int) ($user['user_role_id'] ?? 0) === 1) ? 'selected' : ''; ?>>Admin</option>
                         <option value="2" <?php echo ((int) ($user['user_role_id'] ?? 0) === 2) ? 'selected' : ''; ?>>User</option>
                       </select>
@@ -148,11 +150,11 @@ include __DIR__ . '/../src/includes/header.php';
             </span>
           </td>
           <td>
-            <button class="btn btn-sm btn-outline-primary" type="button" data-bs-toggle="modal" data-bs-target="#editUser<?php echo $userId; ?>">
+            <button class="btn btn-sm btn-outline-primary" type="button" data-bs-toggle="modal" data-bs-target="#editUser<?php echo $userIdEsc; ?>">
               <i class="bi bi-pencil"></i>
             </button>
             <a
-              href="../src/processes/user_deactivate.php?id=<?php echo $userId; ?>"
+              href="../src/processes/user_deactivate.php?id=<?php echo $userIdEsc; ?>"
               class="btn btn-sm btn-outline-danger"
               onclick="return confirm('Are you sure you want to deactivate this employee?');"
             >
@@ -170,6 +172,7 @@ include __DIR__ . '/../src/includes/header.php';
 <div class="modal fade" id="addUserModal" tabindex="-1" aria-labelledby="addUserModalLabel" aria-hidden="true">
   <div class="modal-dialog">
     <form action="../src/processes/user_create.php" method="post" class="modal-content">
+      <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars($_SESSION['csrf_token'], ENT_QUOTES, 'UTF-8'); ?>">
       <div class="modal-header">
         <h5 class="modal-title" id="addUserModalLabel">Add New Employee</h5>
         <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>

@@ -11,6 +11,10 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     exit();
 }
 
+if (!isset($_POST['csrf_token'], $_SESSION['csrf_token']) || !hash_equals($_SESSION['csrf_token'], $_POST['csrf_token'])) {
+    die('CSRF Token Validation Failed.');
+}
+
 if (($_SESSION['user_role'] ?? null) !== 1) {
     header('Location: ../../views/tasks.php?error=unauthorized');
     exit();
@@ -23,6 +27,11 @@ $dueDate = $_POST['due_date'] ?? '';
 
 if ($title === '' || $projectId <= 0 || $assignedTo <= 0 || $dueDate === '') {
     header('Location: ../../views/tasks.php?error=invalid_input');
+    exit();
+}
+
+if (strtotime($dueDate) < strtotime(date('Y-m-d'))) {
+    header('Location: ../../views/tasks.php?error=past_date');
     exit();
 }
 

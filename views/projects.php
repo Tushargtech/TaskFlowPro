@@ -69,6 +69,10 @@ include __DIR__ . '/../src/includes/header.php';
   </div>
   <?php endif; ?>
   <?php foreach ($projects as $project): ?>
+  <?php
+    $projectId = (int) $project['project_id'];
+    $projectIdEsc = htmlspecialchars((string) $projectId, ENT_QUOTES, 'UTF-8');
+  ?>
   <div class="col-md-4 mb-4">
     <div class="card h-100">
       <div class="card-body">
@@ -86,7 +90,7 @@ include __DIR__ . '/../src/includes/header.php';
       <div class="card-footer bg-transparent">
         <a href="#" class="btn btn-sm btn-link disabled">View Tasks</a>
         <?php if ($isAdmin): ?>
-        <button class="btn btn-sm btn-outline-primary float-end" type="button" data-bs-toggle="modal" data-bs-target="#editProjectModal<?php echo (int) $project['project_id']; ?>">Edit</button>
+        <button class="btn btn-sm btn-outline-primary float-end" type="button" data-bs-toggle="modal" data-bs-target="#editProjectModal<?php echo $projectIdEsc; ?>">Edit</button>
         <?php else: ?>
         <button class="btn btn-sm btn-outline-secondary float-end" type="button" disabled>Edit</button>
         <?php endif; ?>
@@ -94,33 +98,34 @@ include __DIR__ . '/../src/includes/header.php';
     </div>
   </div>
   <?php if ($isAdmin):
-    $projectId = (int) $project['project_id'];
     $modalId = 'editProjectModal' . $projectId;
+    $modalIdEsc = htmlspecialchars($modalId, ENT_QUOTES, 'UTF-8');
     $projectTitle = $project['project_title'] ?? '';
     $projectDescription = $project['project_description'] ?? '';
     $projectStatus = $project['project_status'] ?? 'Active';
     ob_start();
   ?>
-  <div class="modal fade" id="<?php echo $modalId; ?>" tabindex="-1" aria-labelledby="<?php echo $modalId; ?>Label" aria-hidden="true">
+  <div class="modal fade" id="<?php echo $modalIdEsc; ?>" tabindex="-1" aria-labelledby="<?php echo $modalIdEsc; ?>Label" aria-hidden="true">
     <div class="modal-dialog">
       <form action="../src/processes/project_update.php" method="post" class="modal-content">
-        <input type="hidden" name="project_id" value="<?php echo $projectId; ?>">
+        <input type="hidden" name="project_id" value="<?php echo $projectIdEsc; ?>">
+        <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars($_SESSION['csrf_token'], ENT_QUOTES, 'UTF-8'); ?>">
         <div class="modal-header">
-          <h5 class="modal-title" id="<?php echo $modalId; ?>Label">Edit Project</h5>
+          <h5 class="modal-title" id="<?php echo $modalIdEsc; ?>Label">Edit Project</h5>
           <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
         </div>
         <div class="modal-body">
           <div class="mb-3">
-            <label class="form-label" for="project_title_<?php echo $projectId; ?>">Project Title</label>
-            <input type="text" id="project_title_<?php echo $projectId; ?>" name="project_title" class="form-control" value="<?php echo htmlspecialchars($projectTitle, ENT_QUOTES, 'UTF-8'); ?>" required>
+            <label class="form-label" for="project_title_<?php echo $projectIdEsc; ?>">Project Title</label>
+            <input type="text" id="project_title_<?php echo $projectIdEsc; ?>" name="project_title" class="form-control" value="<?php echo htmlspecialchars($projectTitle, ENT_QUOTES, 'UTF-8'); ?>" required>
           </div>
           <div class="mb-3">
-            <label class="form-label" for="project_description_<?php echo $projectId; ?>">Description</label>
-            <textarea id="project_description_<?php echo $projectId; ?>" name="project_description" class="form-control" rows="3" placeholder="Optional details"><?php echo htmlspecialchars($projectDescription, ENT_QUOTES, 'UTF-8'); ?></textarea>
+            <label class="form-label" for="project_description_<?php echo $projectIdEsc; ?>">Description</label>
+            <textarea id="project_description_<?php echo $projectIdEsc; ?>" name="project_description" class="form-control" rows="3" placeholder="Optional details"><?php echo htmlspecialchars($projectDescription, ENT_QUOTES, 'UTF-8'); ?></textarea>
           </div>
           <div class="mb-3">
-            <label class="form-label" for="project_status_<?php echo $projectId; ?>">Status</label>
-            <select id="project_status_<?php echo $projectId; ?>" name="project_status" class="form-select">
+            <label class="form-label" for="project_status_<?php echo $projectIdEsc; ?>">Status</label>
+            <select id="project_status_<?php echo $projectIdEsc; ?>" name="project_status" class="form-select">
               <?php foreach ($statusOptions as $statusOption): ?>
               <option value="<?php echo htmlspecialchars($statusOption, ENT_QUOTES, 'UTF-8'); ?>" <?php echo $statusOption === $projectStatus ? 'selected' : ''; ?>>
                 <?php echo htmlspecialchars($statusOption, ENT_QUOTES, 'UTF-8'); ?>
@@ -147,6 +152,7 @@ include __DIR__ . '/../src/includes/header.php';
 <div class="modal fade" id="addProjectModal" tabindex="-1" aria-labelledby="addProjectModalLabel" aria-hidden="true">
   <div class="modal-dialog">
     <form action="../src/processes/project_create.php" method="post" class="modal-content">
+      <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars($_SESSION['csrf_token'], ENT_QUOTES, 'UTF-8'); ?>">
       <div class="modal-header">
         <h5 class="modal-title" id="addProjectModalLabel">Create New Project</h5>
         <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
