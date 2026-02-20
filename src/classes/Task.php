@@ -98,6 +98,32 @@ class Task
         ]);
     }
 
+    public function updateTaskStatus(int $taskId, string $status): bool
+    {
+        if (session_status() !== PHP_SESSION_ACTIVE) {
+            session_start();
+        }
+
+        $modifierId = $_SESSION['user_id'] ?? null;
+
+        $stmt = $this->pdo->prepare(
+            'UPDATE tasks SET task_status = ?, task_modified_by = ? WHERE task_id = ?'
+        );
+
+        return $stmt->execute([
+            $status,
+            $modifierId,
+            $taskId,
+        ]);
+    }
+
+    public function deleteTask(int $taskId): bool
+    {
+        $stmt = $this->pdo->prepare('DELETE FROM tasks WHERE task_id = :id');
+
+        return $stmt->execute(['id' => $taskId]);
+    }
+
     public function markComplete(int $taskId, int $userId, bool $isAdmin = false): bool
     {
         if ($isAdmin) {

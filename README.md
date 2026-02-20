@@ -96,30 +96,13 @@
 **Note:** Seed the database with additional employees via the Employee Management page to test task assignment workflows.
 
 ## API Endpoints
-
-### Authentication
-- `POST /src/auth/login_process.php` - Process login form
-- `GET /src/auth/logout.php` - Clear session and redirect to login
-
-### Employee Management (Admin Only)
-- `POST /src/processes/user_create.php` - Create employee
-- `POST /src/processes/user_update.php` - Update employee details
-- `POST /src/processes/user_deactivate.php` - Soft delete employee
-
-### Project Management (Admin Only)
-- `POST /src/processes/project_create.php` - Create project
-- `POST /src/processes/project_update.php` - Update project details
-
-### Task Management (Admin Only)
-- `POST /src/processes/task_create.php` - Assign task to employee
-- `POST /src/processes/task_update.php` - Update task details/status
-- `GET /src/processes/task_complete.php?id={taskId}` - Mark task completed
-
-### Views (Protected by Middleware)
-- `GET /views/dashboard.php` - Dashboard with stats
-- `GET /views/users.php` - Employee list (Admin only)
-- `GET /views/projects.php` - Project board
-- `GET /views/tasks.php` - Task manager with analytics
+All endpoints require an active session.
+| Method | Endpoint | Description |
+| :--- | :--- | :--- |
+| GET | `/api/users` | List all employees |
+| POST | `/api/projects` | Create a new project |
+| PUT | `/api/tasks/{id}` | Update task status |
+| DELETE | `/api/users/{id}` | Deactivate an employee |
 
 ## Known Limitations
 

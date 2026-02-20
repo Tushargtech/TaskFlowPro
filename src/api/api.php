@@ -105,28 +105,18 @@ function handleProjects(string $method, ?int $id, Project $projectObj): void
 {
     switch ($method) {
         case 'GET':
-            if ($id !== null) {
-                $project = $projectObj->getProjectById($id);
-                if ($project === null) {
-                    respond(['message' => 'Project not found'], 404);
-                }
-                respond($project);
-            }
-            respond($projectObj->getAllProjects());
+            $data = $id !== null ? $projectObj->getProjectById($id) : $projectObj->getAllProjects();
+            respond($data ?? ['message' => 'Project not found'], $data ? 200 : 404);
             break;
         case 'POST':
             $input = readJsonInput();
-            validateRequired($input, ['title']);
+            $title = $input['title'] ?? '';
+            $description = $input['desc'] ?? ($input['description'] ?? null);
             $createdBy = (int) ($_SESSION['user_id'] ?? 0);
-            if ($createdBy <= 0) {
-                respond(['message' => 'Unauthorized'], 401);
+            if ($title === '' || $createdBy <= 0) {
+                respond(['message' => 'Invalid input'], 422);
             }
-            $success = $projectObj->createProject(
-                $input['title'],
-                $input['description'] ?? null,
-                $createdBy,
-                $input['status'] ?? 'Active'
-            );
+            $success = $projectObj->createProject($title, $description, $createdBy);
             respond(['success' => $success], $success ? 201 : 400);
             break;
         case 'PUT':
@@ -134,19 +124,19 @@ function handleProjects(string $method, ?int $id, Project $projectObj): void
                 respond(['message' => 'Project id is required'], 400);
             }
             $input = readJsonInput();
-            validateRequired($input, ['title', 'status']);
-            $payload = [
-                'id' => $id,
-                'title' => $input['title'],
-                'description' => $input['description'] ?? '',
-                'status' => $input['status'],
-                'modified_by' => (int) ($_SESSION['user_id'] ?? 0),
-            ];
-            $success = $projectObj->updateProject($payload);
+            $input['id'] = $id;
+            if (!isset($input['title'])) {
+                respond(['message' => 'Invalid input'], 422);
+            }
+            $success = $projectObj->updateProject($input);
             respond(['success' => $success]);
             break;
         case 'DELETE':
-            respond(['message' => 'Method not supported for projects'], 405);
+            if ($id === null) {
+                respond(['message' => 'Project id is required'], 400);
+            }
+            $success = $projectObj->deactivateProject($id);
+            respond(['success' => $success]);
             break;
         default:
             respond(['message' => 'Method not allowed'], 405);
@@ -157,54 +147,33 @@ function handleTasks(string $method, ?int $id, Task $taskObj): void
 {
     switch ($method) {
         case 'GET':
-            if ($id !== null) {
-                $task = $taskObj->getTaskById($id);
-                if ($task === null) {
-                    respond(['message' => 'Task not found'], 404);
-                }
-                respond($task);
-            }
-            respond($taskObj->getTasks());
+            $userId = (($_SESSION['user_role'] ?? null) == 1) ? null : (int) ($_SESSION['user_id'] ?? 0);
+            $data = $id !== null ? $taskObj->getTaskById($id) : $taskObj->getTasks($userId);
+            respond($data ?? ['message' => 'Task not found'], $data ? 200 : 404);
             break;
         case 'POST':
             $input = readJsonInput();
-            validateRequired($input, ['title', 'project_id', 'assigned_to', 'due_date']);
-            $createdBy = (int) ($_SESSION['user_id'] ?? 0);
-            if ($createdBy <= 0) {
-                respond(['message' => 'Unauthorized'], 401);
-            }
-            $payload = [
-                'title' => $input['title'],
-                'description' => $input['description'] ?? '',
-                'project_id' => (int) $input['project_id'],
-                'assigned_to' => (int) $input['assigned_to'],
-                'due_date' => $input['due_date'],
-                'created_by' => $createdBy,
-            ];
-            $success = $taskObj->createTask($payload);
-            respond(['success' => $success], $success ? 201 : 400);
+            $input['created_by'] = (int) ($_SESSION['user_id'] ?? 0);
+            $success = $taskObj->createTask($input);
+            respond(['success' => $success]);
             break;
         case 'PUT':
             if ($id === null) {
                 respond(['message' => 'Task id is required'], 400);
             }
             $input = readJsonInput();
-            validateRequired($input, ['title', 'project_id', 'assigned_to', 'due_date', 'status']);
-            $payload = [
-                'id' => $id,
-                'title' => $input['title'],
-                'description' => $input['description'] ?? '',
-                'project_id' => (int) $input['project_id'],
-                'assigned_to' => (int) $input['assigned_to'],
-                'due_date' => $input['due_date'],
-                'status' => $input['status'],
-                'modified_by' => (int) ($_SESSION['user_id'] ?? 0),
-            ];
-            $success = $taskObj->updateTask($payload);
+            if (!isset($input['status'])) {
+                respond(['message' => 'Invalid input'], 422);
+            }
+            $success = $taskObj->updateTaskStatus($id, $input['status']);
             respond(['success' => $success]);
             break;
         case 'DELETE':
-            respond(['message' => 'Method not supported for tasks'], 405);
+            if ($id === null) {
+                respond(['message' => 'Task id is required'], 400);
+            }
+            $success = $taskObj->deleteTask($id);
+            respond(['success' => $success]);
             break;
         default:
             respond(['message' => 'Method not allowed'], 405);

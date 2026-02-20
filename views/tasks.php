@@ -164,7 +164,7 @@ include __DIR__ . '/../src/includes/header.php';
   <div class="table-responsive">
     <table class="table table-hover align-middle mb-0">
       <thead class="table-light">
-        <tr>
+        <tr id="task-row-<?php echo $taskId; ?>">
           <th style="width:24%">Task</th>
           <th style="width:18%">Project</th>
           <th style="width:18%">Assigned To</th>
@@ -237,6 +237,7 @@ include __DIR__ . '/../src/includes/header.php';
               <?php if ($canComplete): ?>
               <a class="btn btn-success" href="../src/processes/task_complete.php?id=<?php echo $taskId; ?>">Done</a>
               <?php endif; ?>
+              <button type="button" class="btn btn-outline-danger" onclick="deleteTask(<?php echo $taskId; ?>)">Delete</button>
             </div>
             <?php elseif ($canComplete): ?>
             <a class="btn btn-sm btn-success" href="../src/processes/task_complete.php?id=<?php echo $taskId; ?>">Done</a>
@@ -371,5 +372,20 @@ include __DIR__ . '/../src/includes/header.php';
     </div>
   </div>
 <?php endif; ?>
+
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script>
+function deleteTask(taskId) {
+  if (confirm('Are you sure?')) {
+    $.ajax({
+      url: '../api/tasks/' + taskId,
+      type: 'DELETE',
+      success: function () {
+        $('#task-row-' + taskId).fadeOut();
+      }
+    });
+  }
+}
+</script>
 
 <?php include __DIR__ . '/../src/includes/footer.php'; ?>

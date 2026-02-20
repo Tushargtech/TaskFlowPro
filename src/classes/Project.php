@@ -20,13 +20,9 @@ class Project
 
     public function getProjectById(int $id): ?array
     {
-        $stmt = $this->pdo->prepare(
-            'SELECT project_id, project_title, project_description, project_status, project_created_on
-             FROM projects
-             WHERE project_id = :id'
-        );
+        $stmt = $this->pdo->prepare('SELECT * FROM projects WHERE project_id = ?');
+        $stmt->execute([$id]);
 
-        $stmt->execute(['id' => $id]);
         $project = $stmt->fetch(PDO::FETCH_ASSOC);
 
         return $project ?: null;
@@ -49,21 +45,30 @@ class Project
 
     public function updateProject(array $data): bool
     {
+        $description = $data['desc'] ?? ($data['description'] ?? '');
+        $status = $data['status'] ?? 'Active';
+
         $stmt = $this->pdo->prepare(
-            'UPDATE projects SET
-                project_title = :title,
-                project_description = :description,
-                project_status = :status,
-                project_modified_by = :modified_by
-             WHERE project_id = :id'
+            'UPDATE projects SET project_title = ?, project_description = ?, project_status = ? WHERE project_id = ?'
         );
 
         return $stmt->execute([
-            'title' => $data['title'],
-            'description' => $data['description'] !== '' ? $data['description'] : null,
-            'status' => $data['status'],
-            'modified_by' => $data['modified_by'],
-            'id' => $data['id'],
+            $data['title'],
+            $description,
+            $status,
+            $data['id'],
+        ]);
+    }
+
+    public function deactivateProject(int $id, ?int $modifiedBy = null): bool
+    {
+        $stmt = $this->pdo->prepare(
+            'UPDATE projects SET project_status = "Inactive", project_modified_by = :modified_by WHERE project_id = :id'
+        );
+
+        return $stmt->execute([
+            'modified_by' => $modifiedBy,
+            'id' => $id,
         ]);
     }
 }
