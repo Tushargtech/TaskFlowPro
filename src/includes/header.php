@@ -15,31 +15,8 @@ $userRole = $_SESSION['user_role'] ?? null;
     <title>TaskFlow Pro</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css">
-    <style>
-      :root {
-        --primary-color: #2c3e50;
-        --secondary-color: #18bc9c;
-      }
-
-      body {
-        background-color: #f4f7f6;
-      }
-
-      .navbar {
-        background-color: var(--primary-color) !important;
-      }
-
-      .sidebar-link {
-        border-radius: 5px;
-        margin-bottom: 5px;
-      }
-
-      .card {
-        border: none;
-        border-radius: 10px;
-        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-      }
-    </style>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:wght@400;600;700&family=Space+Grotesk:wght@400;500;600;700&display=swap">
+    <link rel="stylesheet" href="../public/css/app.css">
   </head>
   <body>
     <nav class="navbar navbar-expand-lg navbar-dark sticky-top">

@@ -88,7 +88,7 @@ include __DIR__ . '/../src/includes/header.php';
         </span>
       </div>
       <div class="card-footer bg-transparent">
-        <a href="#" class="btn btn-sm btn-link disabled">View Tasks</a>
+        <a href="tasks.php" class="btn btn-sm btn-link">View Tasks</a>
         <?php if ($isAdmin): ?>
         <button class="btn btn-sm btn-outline-primary float-end" type="button" data-bs-toggle="modal" data-bs-target="#editProjectModal<?php echo $projectIdEsc; ?>">Edit</button>
         <?php else: ?>

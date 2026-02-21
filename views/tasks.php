@@ -242,12 +242,12 @@ include __DIR__ . '/../src/includes/header.php';
             <div class="btn-group btn-group-sm" role="group">
               <button type="button" class="btn btn-outline-secondary" data-bs-toggle="modal" data-bs-target="#editTaskModal<?php echo $taskIdEsc; ?>">Edit</button>
               <?php if ($canComplete): ?>
-              <a class="btn btn-success" href="../src/processes/task_complete.php?id=<?php echo $taskIdEsc; ?>">Done</a>
+              <button type="button" class="btn btn-success" onclick="completeTask(<?php echo $taskIdEsc; ?>)" id="btn-task-<?php echo $taskIdEsc; ?>">Done</button>
               <?php endif; ?>
               <button type="button" class="btn btn-outline-danger" onclick="deleteTask(<?php echo $taskIdEsc; ?>)">Delete</button>
             </div>
             <?php elseif ($canComplete): ?>
-            <a class="btn btn-sm btn-success" href="../src/processes/task_complete.php?id=<?php echo $taskIdEsc; ?>">Done</a>
+            <button type="button" class="btn btn-sm btn-success" onclick="completeTask(<?php echo $taskIdEsc; ?>)" id="btn-task-<?php echo $taskIdEsc; ?>">Done</button>
             <?php elseif ($isCompleted): ?>
             <i class="bi bi-check-all text-success"></i>
             <?php else: ?>
@@ -385,6 +385,32 @@ include __DIR__ . '/../src/includes/header.php';
 
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 <script>
+function completeTask(taskId) {
+    // 1. Prepare the data
+    const data = { status: 'Completed' };
+
+    // 2. Fire the AJAX request to our API Router
+    $.ajax({
+        url: '../api/tasks/' + taskId,
+        type: 'PUT', // We use PUT for updates
+        data: JSON.stringify(data),
+        contentType: 'application/json',
+        success: function(response) {
+            if(response.success) {
+                // 3. UI Betterment: Update the UI without refreshing
+                $('#btn-task-' + taskId).parent().html('<i class="bi bi-check-all text-success"></i> Done');
+                // Update the task row status badge
+                $('#task-row-' + taskId + ' .badge').removeClass().addClass('badge bg-success').text('Completed');
+            } else {
+                alert('Error: ' + (response.message || 'Unable to complete task.'));
+            }
+        },
+        error: function() {
+            alert('Error updating task status.');
+        }
+    });
+}
+
 function deleteTask(taskId) {
   if (confirm('Are you sure?')) {
     $.ajax({
