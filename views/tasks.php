@@ -31,7 +31,7 @@ foreach ($tasks as $task) {
     }
 
     $dueDateString = $task['task_due_date'] ?? null;
-    if ($dueDateString && $status !== 'Completed') {
+  if ($dueDateString && $status === 'Due') {
         $dueDateObject = DateTimeImmutable::createFromFormat('Y-m-d', $dueDateString);
         if ($dueDateObject === false) {
             $dueDateObject = new DateTimeImmutable($dueDateString);
@@ -61,7 +61,7 @@ if ($isAdmin) {
     $employees = $employeeStmt->fetchAll(PDO::FETCH_ASSOC);
 }
 
-$statusOptions = ['Pending', 'In Progress', 'Completed'];
+$statusOptions = ['Due', 'Completed', 'Inactive'];
 
 $messages = [
   'success' => [
@@ -185,24 +185,24 @@ include __DIR__ . '/../src/includes/header.php';
           $taskId = (int) $task['task_id'];
           $taskIdEsc = htmlspecialchars((string) $taskId, ENT_QUOTES, 'UTF-8');
           $title = $task['task_title'] ?? '';
-          $status = $task['task_status'] ?? 'Pending';
+            $status = $task['task_status'] ?? 'Due';
           $assignedName = trim((string) ($task['assigned_name'] ?? '')) ?: 'Unassigned';
           $assignedTo = (int) ($task['task_assigned_to'] ?? 0);
           $isCompleted = ($status === 'Completed');
-          $canComplete = !$isCompleted && ($isAdmin || $assignedTo === $userId);
+            $canComplete = ($status === 'Due') && ($isAdmin || $assignedTo === $userId);
 
           $statusClass = 'bg-warning text-dark';
           if ($status === 'Completed') {
               $statusClass = 'bg-success';
-          } elseif ($status === 'In Progress') {
-              $statusClass = 'bg-primary';
+            } elseif ($status === 'Inactive') {
+              $statusClass = 'bg-secondary';
           }
 
           $dueRaw = $task['task_due_date'] ?? null;
           $dueDisplay = $dueRaw ? date('M d, Y', strtotime($dueRaw)) : 'No due date';
           $dueBadge = null;
 
-          if ($dueRaw && !$isCompleted) {
+            if ($dueRaw && $status === 'Due') {
               $dueDateObject = DateTimeImmutable::createFromFormat('Y-m-d', $dueRaw);
               if ($dueDateObject === false) {
                   $dueDateObject = new DateTimeImmutable($dueRaw);
@@ -235,7 +235,7 @@ include __DIR__ . '/../src/includes/header.php';
             <?php endif; ?>
           </td>
           <td>
-            <span class="badge <?php echo $statusClassEsc; ?>"><?php echo htmlspecialchars($status, ENT_QUOTES, 'UTF-8'); ?></span>
+            <span class="badge task-status-badge <?php echo $statusClassEsc; ?>"><?php echo htmlspecialchars($status, ENT_QUOTES, 'UTF-8'); ?></span>
           </td>
           <td class="text-center">
             <?php if ($isAdmin): ?>
@@ -400,7 +400,7 @@ function completeTask(taskId) {
                 // 3. UI Betterment: Update the UI without refreshing
                 $('#btn-task-' + taskId).parent().html('<i class="bi bi-check-all text-success"></i> Done');
                 // Update the task row status badge
-                $('#task-row-' + taskId + ' .badge').removeClass().addClass('badge bg-success').text('Completed');
+            $('#task-row-' + taskId + ' .task-status-badge').removeClass().addClass('badge task-status-badge bg-success').text('Completed');
             } else {
                 alert('Error: ' + (response.message || 'Unable to complete task.'));
             }
@@ -416,8 +416,15 @@ function deleteTask(taskId) {
     $.ajax({
       url: '../api/tasks/' + taskId,
       type: 'DELETE',
-      success: function () {
-        $('#task-row-' + taskId).fadeOut();
+      success: function (response) {
+        if (response.success) {
+          $('#task-row-' + taskId).fadeOut();
+        } else {
+          alert('Error: ' + (response.message || 'Unable to delete task.'));
+        }
+      },
+      error: function () {
+        alert('Error deleting task.');
       }
     });
   }
