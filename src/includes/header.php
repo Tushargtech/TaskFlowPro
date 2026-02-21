@@ -7,6 +7,7 @@ require_once __DIR__ . '/auth_middleware.php';
 $userName = $_SESSION['user_name'] ?? 'User';
 $firstName = explode(' ', trim((string) $userName))[0] ?? 'User';
 $userRole = $_SESSION['user_role'] ?? null;
+$csrfToken = $_SESSION['csrf_token'] ?? '';
 ?><!doctype html>
 <html lang="en">
   <head>
@@ -17,6 +18,31 @@ $userRole = $_SESSION['user_role'] ?? null;
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css">
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:wght@400;600;700&family=Space+Grotesk:wght@400;500;600;700&display=swap">
     <link rel="stylesheet" href="../public/css/app.css">
+    <meta name="csrf-token" content="<?php echo htmlspecialchars($csrfToken, ENT_QUOTES, 'UTF-8'); ?>">
+    <script>
+      window.APP_CONFIG = {
+        apiBase: '../api',
+        csrfToken: document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || ''
+      };
+
+      window.apiRequest = async function apiRequest(resourcePath, options = {}) {
+        const endpoint = window.APP_CONFIG.apiBase.replace(/\/$/, '') + '/' + String(resourcePath).replace(/^\//, '');
+        const headers = Object.assign({
+          'Content-Type': 'application/json',
+          'X-CSRF-Token': window.APP_CONFIG.csrfToken
+        }, options.headers || {});
+
+        const response = await fetch(endpoint, Object.assign({}, options, { headers }));
+        const payload = await response.json().catch(() => ({}));
+
+        if (!response.ok) {
+          const errorMessage = payload.message || 'Request failed.';
+          throw new Error(errorMessage);
+        }
+
+        return payload;
+      };
+    </script>
   </head>
   <body>
     <nav class="navbar navbar-expand-lg navbar-dark sticky-top">

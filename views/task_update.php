@@ -2,12 +2,12 @@
 
 declare(strict_types=1);
 
-require_once __DIR__ . '/../../config/db.php';
-require_once __DIR__ . '/../includes/auth_middleware.php';
-require_once __DIR__ . '/../classes/Task.php';
+require_once __DIR__ . '/../config/db.php';
+require_once __DIR__ . '/../src/includes/auth_middleware.php';
+require_once __DIR__ . '/../src/classes/Task.php';
 
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-    header('Location: ../../views/tasks.php');
+    header('Location: tasks.php');
     exit();
 }
 
@@ -16,7 +16,7 @@ if (!isset($_POST['csrf_token'], $_SESSION['csrf_token']) || !hash_equals($_SESS
 }
 
 if (($_SESSION['user_role'] ?? null) !== 1) {
-    header('Location: ../../views/tasks.php?error=unauthorized');
+    header('Location: tasks.php?error=unauthorized');
     exit();
 }
 
@@ -29,7 +29,7 @@ $dueDate = $_POST['task_due_date'] ?? '';
 $status = trim($_POST['task_status'] ?? '');
 
 if ($taskId <= 0 || $title === '' || $projectId <= 0 || $assignedTo <= 0 || $dueDate === '' || $status === '') {
-    header('Location: ../../views/tasks.php?error=invalid_input');
+    header('Location: tasks.php?error=invalid_input');
     exit();
 }
 
@@ -48,14 +48,14 @@ $task = new Task($pdo);
 
 try {
     if ($task->updateTask($data)) {
-        header('Location: ../../views/tasks.php?success=task_updated');
+        header('Location: tasks.php?success=task_updated');
         exit();
     }
 
-    header('Location: ../../views/tasks.php?error=task_update_failed');
+    header('Location: tasks.php?error=task_update_failed');
     exit();
 } catch (Throwable $exception) {
     error_log('task_update.php error: ' . $exception->getMessage());
-    header('Location: ../../views/tasks.php?error=task_update_failed');
+    header('Location: tasks.php?error=task_update_failed');
     exit();
 }

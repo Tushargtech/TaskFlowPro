@@ -107,7 +107,7 @@ include __DIR__ . '/../src/includes/header.php';
   ?>
   <div class="modal fade" id="<?php echo $modalIdEsc; ?>" tabindex="-1" aria-labelledby="<?php echo $modalIdEsc; ?>Label" aria-hidden="true">
     <div class="modal-dialog">
-      <form action="../src/processes/project_update.php" method="post" class="modal-content">
+      <form class="modal-content project-update-form" data-project-id="<?php echo $projectIdEsc; ?>">
         <input type="hidden" name="project_id" value="<?php echo $projectIdEsc; ?>">
         <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars($_SESSION['csrf_token'], ENT_QUOTES, 'UTF-8'); ?>">
         <div class="modal-header">
@@ -151,7 +151,7 @@ include __DIR__ . '/../src/includes/header.php';
 <?php foreach ($editModals as $modalHtml): echo $modalHtml; endforeach; ?>
 <div class="modal fade" id="addProjectModal" tabindex="-1" aria-labelledby="addProjectModalLabel" aria-hidden="true">
   <div class="modal-dialog">
-    <form action="../src/processes/project_create.php" method="post" class="modal-content">
+    <form id="createProjectForm" class="modal-content">
       <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars($_SESSION['csrf_token'], ENT_QUOTES, 'UTF-8'); ?>">
       <div class="modal-header">
         <h5 class="modal-title" id="addProjectModalLabel">Create New Project</h5>
@@ -181,5 +181,79 @@ include __DIR__ . '/../src/includes/header.php';
   </div>
 </div>
 <?php endif; ?>
+
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+  const createProjectForm = document.getElementById('createProjectForm');
+  if (createProjectForm) {
+    createProjectForm.addEventListener('submit', async function (event) {
+      event.preventDefault();
+
+      const formData = new FormData(createProjectForm);
+      const payload = {
+        title: String(formData.get('project_title') || '').trim(),
+        description: String(formData.get('project_description') || '').trim(),
+        status: String(formData.get('project_status') || 'Active')
+      };
+
+      if (!payload.title) {
+        window.location.href = 'projects.php?error=invalid_input';
+        return;
+      }
+
+      try {
+        const response = await window.apiRequest('projects', {
+          method: 'POST',
+          body: JSON.stringify(payload)
+        });
+
+        if (response.success) {
+          window.location.href = 'projects.php?success=project_created';
+          return;
+        }
+
+        window.location.href = 'projects.php?error=create_failed';
+      } catch (error) {
+        window.location.href = 'projects.php?error=create_exception';
+      }
+    });
+  }
+
+  document.querySelectorAll('.project-update-form').forEach(function (updateForm) {
+    updateForm.addEventListener('submit', async function (event) {
+      event.preventDefault();
+
+      const projectId = Number(updateForm.getAttribute('data-project-id') || 0);
+      const formData = new FormData(updateForm);
+      const payload = {
+        title: String(formData.get('project_title') || '').trim(),
+        description: String(formData.get('project_description') || '').trim(),
+        status: String(formData.get('project_status') || 'Active')
+      };
+
+      if (projectId <= 0 || !payload.title) {
+        window.location.href = 'projects.php?error=invalid_input';
+        return;
+      }
+
+      try {
+        const response = await window.apiRequest('projects/' + projectId, {
+          method: 'PUT',
+          body: JSON.stringify(payload)
+        });
+
+        if (response.success) {
+          window.location.href = 'projects.php?success=project_updated';
+          return;
+        }
+
+        window.location.href = 'projects.php?error=update_failed';
+      } catch (error) {
+        window.location.href = 'projects.php?error=update_exception';
+      }
+    });
+  });
+});
+</script>
 
 <?php include __DIR__ . '/../src/includes/footer.php'; ?>

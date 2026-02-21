@@ -262,7 +262,7 @@ include __DIR__ . '/../src/includes/header.php';
         ?>
         <div class="modal fade" id="<?php echo $modalIdEsc; ?>" tabindex="-1" aria-labelledby="<?php echo $modalIdEsc; ?>Label" aria-hidden="true">
           <div class="modal-dialog">
-            <form action="../src/processes/task_update.php" method="post" class="modal-content">
+            <form class="modal-content task-update-form" data-task-id="<?php echo $taskIdEsc; ?>">
               <input type="hidden" name="task_id" value="<?php echo $taskIdEsc; ?>">
               <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars($_SESSION['csrf_token'], ENT_QUOTES, 'UTF-8'); ?>">
               <div class="modal-header">
@@ -334,7 +334,7 @@ include __DIR__ . '/../src/includes/header.php';
   <?php foreach ($editModals as $modalHtml): ?><?php echo $modalHtml; ?><?php endforeach; ?>
   <div class="modal fade" id="addTaskModal" tabindex="-1" aria-labelledby="addTaskModalLabel" aria-hidden="true">
     <div class="modal-dialog">
-      <form action="../src/processes/task_create.php" method="post" class="modal-content">
+      <form id="createTaskForm" class="modal-content">
         <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars($_SESSION['csrf_token'], ENT_QUOTES, 'UTF-8'); ?>">
         <div class="modal-header">
           <h5 class="modal-title" id="addTaskModalLabel">Assign New Task</h5>
@@ -373,7 +373,6 @@ include __DIR__ . '/../src/includes/header.php';
             <label class="form-label" for="new_task_due_date">Due Date</label>
             <input type="date" id="new_task_due_date" name="due_date" class="form-control" <?php echo $canAssign ? 'required' : 'disabled'; ?>>
           </div>
-          <input type="hidden" name="created_by" value="<?php echo htmlspecialchars((string) $userId, ENT_QUOTES, 'UTF-8'); ?>">
         </div>
         <div class="modal-footer">
           <button type="submit" class="btn btn-primary" <?php echo $canAssign ? '' : 'disabled'; ?>>Create Task</button>
@@ -383,52 +382,137 @@ include __DIR__ . '/../src/includes/header.php';
   </div>
 <?php endif; ?>
 
-<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 <script>
-function completeTask(taskId) {
-    // 1. Prepare the data
-    const data = { status: 'Completed' };
-
-    // 2. Fire the AJAX request to our API Router
-    $.ajax({
-        url: '../api/tasks/' + taskId,
-        type: 'PUT', // We use PUT for updates
-        data: JSON.stringify(data),
-        contentType: 'application/json',
-        success: function(response) {
-            if(response.success) {
-                // 3. UI Betterment: Update the UI without refreshing
-                $('#btn-task-' + taskId).parent().html('<i class="bi bi-check-all text-success"></i> Done');
-                // Update the task row status badge
-            $('#task-row-' + taskId + ' .task-status-badge').removeClass().addClass('badge task-status-badge bg-success').text('Completed');
-            } else {
-                alert('Error: ' + (response.message || 'Unable to complete task.'));
-            }
-        },
-        error: function() {
-            alert('Error updating task status.');
-        }
+async function completeTask(taskId) {
+  try {
+    const response = await window.apiRequest('tasks/' + taskId, {
+      method: 'PUT',
+      body: JSON.stringify({ status: 'Completed' })
     });
+
+    if (!response.success) {
+      alert('Error: ' + (response.message || 'Unable to complete task.'));
+      return;
+    }
+
+    const button = document.getElementById('btn-task-' + taskId);
+    const statusBadge = document.querySelector('#task-row-' + taskId + ' .task-status-badge');
+
+    if (button && button.parentElement) {
+      button.parentElement.innerHTML = '<i class="bi bi-check-all text-success"></i> Done';
+    } else if (button) {
+      button.outerHTML = '<i class="bi bi-check-all text-success"></i>';
+    }
+
+    if (statusBadge) {
+      statusBadge.className = 'badge task-status-badge bg-success';
+      statusBadge.textContent = 'Completed';
+    }
+  } catch (error) {
+    alert(error.message || 'Error updating task status.');
+  }
 }
 
-function deleteTask(taskId) {
-  if (confirm('Are you sure?')) {
-    $.ajax({
-      url: '../api/tasks/' + taskId,
-      type: 'DELETE',
-      success: function (response) {
+async function deleteTask(taskId) {
+  if (!confirm('Are you sure?')) {
+    return;
+  }
+
+  try {
+    const response = await window.apiRequest('tasks/' + taskId, {
+      method: 'DELETE'
+    });
+
+    if (!response.success) {
+      alert('Error: ' + (response.message || 'Unable to delete task.'));
+      return;
+    }
+
+    const row = document.getElementById('task-row-' + taskId);
+    if (row) {
+      row.remove();
+    }
+  } catch (error) {
+    alert(error.message || 'Error deleting task.');
+  }
+}
+
+document.addEventListener('DOMContentLoaded', function () {
+  const createTaskForm = document.getElementById('createTaskForm');
+  if (createTaskForm) {
+    createTaskForm.addEventListener('submit', async function (event) {
+      event.preventDefault();
+
+      const formData = new FormData(createTaskForm);
+      const payload = {
+        title: String(formData.get('title') || '').trim(),
+        description: String(formData.get('description') || '').trim(),
+        project_id: Number(formData.get('project_id') || 0),
+        assigned_to: Number(formData.get('assigned_to') || 0),
+        due_date: String(formData.get('due_date') || '').trim()
+      };
+
+      if (!payload.title || payload.project_id <= 0 || payload.assigned_to <= 0 || !payload.due_date) {
+        window.location.href = 'tasks.php?error=invalid_input';
+        return;
+      }
+
+      try {
+        const response = await window.apiRequest('tasks', {
+          method: 'POST',
+          body: JSON.stringify(payload)
+        });
+
         if (response.success) {
-          $('#task-row-' + taskId).fadeOut();
-        } else {
-          alert('Error: ' + (response.message || 'Unable to delete task.'));
+          window.location.href = 'tasks.php?success=task_created';
+          return;
         }
-      },
-      error: function () {
-        alert('Error deleting task.');
+
+        window.location.href = 'tasks.php?error=task_failed';
+      } catch (error) {
+        window.location.href = 'tasks.php?error=task_exception';
       }
     });
   }
-}
+
+  document.querySelectorAll('.task-update-form').forEach(function (updateForm) {
+    updateForm.addEventListener('submit', async function (event) {
+      event.preventDefault();
+
+      const taskId = Number(updateForm.getAttribute('data-task-id') || 0);
+      const formData = new FormData(updateForm);
+      const payload = {
+        title: String(formData.get('task_title') || '').trim(),
+        description: String(formData.get('task_description') || '').trim(),
+        project_id: Number(formData.get('project_id') || 0),
+        assigned_to: Number(formData.get('assigned_to') || 0),
+        due_date: String(formData.get('task_due_date') || '').trim(),
+        status: String(formData.get('task_status') || 'Due')
+      };
+
+      if (taskId <= 0 || !payload.title || payload.project_id <= 0 || payload.assigned_to <= 0 || !payload.due_date || !payload.status) {
+        window.location.href = 'tasks.php?error=invalid_input';
+        return;
+      }
+
+      try {
+        const response = await window.apiRequest('tasks/' + taskId, {
+          method: 'PUT',
+          body: JSON.stringify(payload)
+        });
+
+        if (response.success) {
+          window.location.href = 'tasks.php?success=task_updated';
+          return;
+        }
+
+        window.location.href = 'tasks.php?error=task_update_failed';
+      } catch (error) {
+        window.location.href = 'tasks.php?error=task_update_failed';
+      }
+    });
+  });
+});
 </script>
 
 <?php include __DIR__ . '/../src/includes/footer.php'; ?>

@@ -2,12 +2,12 @@
 
 declare(strict_types=1);
 
-require_once __DIR__ . '/../../config/db.php';
-require_once __DIR__ . '/../includes/auth_middleware.php';
-require_once __DIR__ . '/../classes/User.php';
+require_once __DIR__ . '/../config/db.php';
+require_once __DIR__ . '/../src/includes/auth_middleware.php';
+require_once __DIR__ . '/../src/classes/User.php';
 
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-    header('Location: ../../views/users.php');
+    header('Location: users.php');
     exit();
 }
 
@@ -16,14 +16,14 @@ if (!isset($_POST['csrf_token'], $_SESSION['csrf_token']) || !hash_equals($_SESS
 }
 
 if (($_SESSION['user_role'] ?? null) !== 1) {
-    header('Location: ../../views/dashboard.php');
+    header('Location: dashboard.php');
     exit();
 }
 
 $userId = (int) ($_POST['user_id'] ?? 0);
 
 if ($userId <= 0) {
-    header('Location: ../../views/users.php?error=invalid_user');
+    header('Location: users.php?error=invalid_user');
     exit();
 }
 
@@ -38,7 +38,7 @@ $data = [
 ];
 
 if ($data['email'] === '') {
-    header('Location: ../../views/users.php?error=empty_fields');
+    header('Location: users.php?error=empty_fields');
     exit();
 }
 
@@ -46,14 +46,14 @@ $user = new User($pdo);
 
 try {
     if ($user->updateUser($data)) {
-        header('Location: ../../views/users.php?success=user_updated');
+        header('Location: users.php?success=user_updated');
         exit();
     }
 
-    header('Location: ../../views/users.php?error=failed');
+    header('Location: users.php?error=failed');
     exit();
 } catch (Throwable $exception) {
     error_log('user_update.php error: ' . $exception->getMessage());
-    header('Location: ../../views/users.php?error=' . urlencode('update_failed'));
+    header('Location: users.php?error=' . urlencode('update_failed'));
     exit();
 }

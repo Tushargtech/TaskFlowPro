@@ -2,12 +2,12 @@
 
 declare(strict_types=1);
 
-require_once __DIR__ . '/../../config/db.php';
-require_once __DIR__ . '/../includes/auth_middleware.php';
-require_once __DIR__ . '/../classes/Project.php';
+require_once __DIR__ . '/../config/db.php';
+require_once __DIR__ . '/../src/includes/auth_middleware.php';
+require_once __DIR__ . '/../src/classes/Project.php';
 
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-    header('Location: ../../views/projects.php');
+    header('Location: projects.php');
     exit();
 }
 
@@ -16,7 +16,7 @@ if (!isset($_POST['csrf_token'], $_SESSION['csrf_token']) || !hash_equals($_SESS
 }
 
 if (($_SESSION['user_role'] ?? null) !== 1) {
-    header('Location: ../../views/projects.php?error=unauthorized');
+    header('Location: projects.php?error=unauthorized');
     exit();
 }
 
@@ -28,7 +28,7 @@ $status = $_POST['project_status'] ?? 'Active';
 $allowedStatuses = ['Active', 'Inactive'];
 
 if ($projectId <= 0 || $title === '' || !in_array($status, $allowedStatuses, true)) {
-    header('Location: ../../views/projects.php?error=invalid_input');
+    header('Location: projects.php?error=invalid_input');
     exit();
 }
 
@@ -44,14 +44,14 @@ $data = [
 
 try {
     if ($project->updateProject($data)) {
-        header('Location: ../../views/projects.php?success=project_updated');
+        header('Location: projects.php?success=project_updated');
         exit();
     }
 
-    header('Location: ../../views/projects.php?error=update_failed');
+    header('Location: projects.php?error=update_failed');
     exit();
 } catch (Throwable $exception) {
     error_log('project_update.php error: ' . $exception->getMessage());
-    header('Location: ../../views/projects.php?error=update_exception');
+    header('Location: projects.php?error=update_exception');
     exit();
 }

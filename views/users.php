@@ -90,7 +90,7 @@ include __DIR__ . '/../src/includes/header.php';
           ?>
           <div class="modal fade" id="editUser<?php echo $userIdEsc; ?>" tabindex="-1" aria-labelledby="editUserLabel<?php echo $userIdEsc; ?>" aria-hidden="true">
             <div class="modal-dialog">
-              <form action="../src/processes/user_update.php" method="post" class="modal-content">
+              <form class="modal-content user-update-form" data-user-id="<?php echo $userIdEsc; ?>">
                 <input type="hidden" name="user_id" value="<?php echo $userIdEsc; ?>">
                 <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars($_SESSION['csrf_token'], ENT_QUOTES, 'UTF-8'); ?>">
                 <div class="modal-header">
@@ -153,13 +153,13 @@ include __DIR__ . '/../src/includes/header.php';
             <button class="btn btn-sm btn-outline-primary" type="button" data-bs-toggle="modal" data-bs-target="#editUser<?php echo $userIdEsc; ?>">
               <i class="bi bi-pencil"></i>
             </button>
-            <a
-              href="../src/processes/user_deactivate.php?id=<?php echo $userIdEsc; ?>"
-              class="btn btn-sm btn-outline-danger"
-              onclick="return confirm('Are you sure you want to deactivate this employee?');"
+            <button
+              type="button"
+              class="btn btn-sm btn-outline-danger user-deactivate-btn"
+              data-user-id="<?php echo $userIdEsc; ?>"
             >
               <i class="bi bi-trash"></i>
-            </a>
+            </button>
           </td>
         </tr>
 
@@ -171,7 +171,7 @@ include __DIR__ . '/../src/includes/header.php';
 
 <div class="modal fade" id="addUserModal" tabindex="-1" aria-labelledby="addUserModalLabel" aria-hidden="true">
   <div class="modal-dialog">
-    <form action="../src/processes/user_create.php" method="post" class="modal-content">
+    <form id="createUserForm" class="modal-content">
       <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars($_SESSION['csrf_token'], ENT_QUOTES, 'UTF-8'); ?>">
       <div class="modal-header">
         <h5 class="modal-title" id="addUserModalLabel">Add New Employee</h5>
@@ -228,5 +228,114 @@ include __DIR__ . '/../src/includes/header.php';
     echo $modalHtml;
   }
   ?>
+
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+  const createUserForm = document.getElementById('createUserForm');
+  if (createUserForm) {
+    createUserForm.addEventListener('submit', async function (event) {
+      event.preventDefault();
+
+      const formData = new FormData(createUserForm);
+      const payload = {
+        first_name: String(formData.get('first_name') || '').trim(),
+        last_name: String(formData.get('last_name') || '').trim(),
+        email: String(formData.get('email') || '').trim(),
+        login: String(formData.get('login') || '').trim(),
+        role_id: Number(formData.get('role_id') || 0),
+        password: String(formData.get('password') || '').trim(),
+        status: String(formData.get('status') || 'Active')
+      };
+
+      if (!payload.first_name || !payload.last_name || !payload.email || !payload.login || payload.role_id <= 0 || !payload.password) {
+        window.location.href = 'users.php?error=empty_fields';
+        return;
+      }
+
+      try {
+        const response = await window.apiRequest('users', {
+          method: 'POST',
+          body: JSON.stringify(payload)
+        });
+
+        if (response.success) {
+          window.location.href = 'users.php?success=user_added';
+          return;
+        }
+
+        window.location.href = 'users.php?error=creation_failed';
+      } catch (error) {
+        window.location.href = 'users.php?error=failed';
+      }
+    });
+  }
+
+  document.querySelectorAll('.user-update-form').forEach(function (updateForm) {
+    updateForm.addEventListener('submit', async function (event) {
+      event.preventDefault();
+
+      const userId = Number(updateForm.getAttribute('data-user-id') || 0);
+      const formData = new FormData(updateForm);
+      const payload = {
+        first_name: String(formData.get('first_name') || '').trim(),
+        last_name: String(formData.get('last_name') || '').trim(),
+        email: String(formData.get('email') || '').trim(),
+        role_id: Number(formData.get('role_id') || 0),
+        status: String(formData.get('status') || 'Active')
+      };
+
+      if (userId <= 0 || !payload.first_name || !payload.last_name || !payload.email || payload.role_id <= 0) {
+        window.location.href = 'users.php?error=empty_fields';
+        return;
+      }
+
+      try {
+        const response = await window.apiRequest('users/' + userId, {
+          method: 'PUT',
+          body: JSON.stringify(payload)
+        });
+
+        if (response.success) {
+          window.location.href = 'users.php?success=user_updated';
+          return;
+        }
+
+        window.location.href = 'users.php?error=update_failed';
+      } catch (error) {
+        window.location.href = 'users.php?error=failed';
+      }
+    });
+  });
+
+  document.querySelectorAll('.user-deactivate-btn').forEach(function (deactivateBtn) {
+    deactivateBtn.addEventListener('click', async function () {
+      const userId = Number(deactivateBtn.getAttribute('data-user-id') || 0);
+      if (userId <= 0) {
+        window.location.href = 'users.php?error=invalid_user';
+        return;
+      }
+
+      if (!window.confirm('Are you sure you want to deactivate this employee?')) {
+        return;
+      }
+
+      try {
+        const response = await window.apiRequest('users/' + userId, {
+          method: 'DELETE'
+        });
+
+        if (response.success) {
+          window.location.href = 'users.php?success=deactivated';
+          return;
+        }
+
+        window.location.href = 'users.php?error=failed';
+      } catch (error) {
+        window.location.href = 'users.php?error=failed';
+      }
+    });
+  });
+});
+</script>
 
 <?php include __DIR__ . '/../src/includes/footer.php'; ?>

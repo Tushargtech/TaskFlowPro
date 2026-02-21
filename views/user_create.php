@@ -2,12 +2,12 @@
 
 declare(strict_types=1);
 
-require_once __DIR__ . '/../../config/db.php';
-require_once __DIR__ . '/../includes/auth_middleware.php';
-require_once __DIR__ . '/../classes/User.php';
+require_once __DIR__ . '/../config/db.php';
+require_once __DIR__ . '/../src/includes/auth_middleware.php';
+require_once __DIR__ . '/../src/classes/User.php';
 
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-    header('Location: ../../views/users.php');
+    header('Location: users.php');
     exit();
 }
 
@@ -16,7 +16,7 @@ if (!isset($_POST['csrf_token'], $_SESSION['csrf_token']) || !hash_equals($_SESS
 }
 
 if (($_SESSION['user_role'] ?? null) !== 1) {
-    header('Location: ../../views/dashboard.php');
+    header('Location: dashboard.php');
     exit();
 }
 
@@ -24,7 +24,7 @@ $email = trim($_POST['email'] ?? '');
 $password = $_POST['password'] ?? '';
 
 if ($email === '' || $password === '') {
-    header('Location: ../../views/users.php?error=empty_fields');
+    header('Location: users.php?error=empty_fields');
     exit();
 }
 
@@ -42,14 +42,14 @@ $user = new User($pdo);
 
 try {
     if ($user->createUser($data)) {
-        header('Location: ../../views/users.php?success=user_added');
+        header('Location: users.php?success=user_added');
         exit();
     }
 
-    header('Location: ../../views/users.php?error=failed');
+    header('Location: users.php?error=failed');
     exit();
 } catch (Throwable $exception) {
     error_log('user_create.php error: ' . $exception->getMessage());
-    header('Location: ../../views/users.php?error=' . urlencode('creation_failed'));
+    header('Location: users.php?error=' . urlencode('creation_failed'));
     exit();
 }

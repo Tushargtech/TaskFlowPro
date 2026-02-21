@@ -2,12 +2,12 @@
 
 declare(strict_types=1);
 
-require_once __DIR__ . '/../../config/db.php';
-require_once __DIR__ . '/../includes/auth_middleware.php';
-require_once __DIR__ . '/../classes/Project.php';
+require_once __DIR__ . '/../config/db.php';
+require_once __DIR__ . '/../src/includes/auth_middleware.php';
+require_once __DIR__ . '/../src/classes/Project.php';
 
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-    header('Location: ../../views/projects.php');
+    header('Location: projects.php');
     exit();
 }
 
@@ -16,7 +16,7 @@ if (!isset($_POST['csrf_token'], $_SESSION['csrf_token']) || !hash_equals($_SESS
 }
 
 if (($_SESSION['user_role'] ?? null) !== 1) {
-    header('Location: ../../views/projects.php?error=invalid_input');
+    header('Location: projects.php?error=invalid_input');
     exit();
 }
 
@@ -25,7 +25,7 @@ $description = trim($_POST['project_description'] ?? '');
 $status = $_POST['project_status'] ?? 'Active';
 
 if ($title === '') {
-    header('Location: ../../views/projects.php?error=invalid_input');
+    header('Location: projects.php?error=invalid_input');
     exit();
 }
 
@@ -34,14 +34,14 @@ $createdBy = (int) ($_SESSION['user_id'] ?? 0);
 
 try {
     if ($project->createProject($title, $description !== '' ? $description : null, $createdBy, $status)) {
-        header('Location: ../../views/projects.php?success=project_created');
+        header('Location: projects.php?success=project_created');
         exit();
     }
 
-    header('Location: ../../views/projects.php?error=create_failed');
+    header('Location: projects.php?error=create_failed');
     exit();
 } catch (Throwable $exception) {
     error_log('project_create.php error: ' . $exception->getMessage());
-    header('Location: ../../views/projects.php?error=create_exception');
+    header('Location: projects.php?error=create_exception');
     exit();
 }
