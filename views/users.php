@@ -3,11 +3,11 @@
 declare(strict_types=1);
 
 require_once __DIR__ . '/../config/db.php';
-require_once __DIR__ . '/../src/includes/auth_middleware.php';
+require_once __DIR__ . '/../src/classes/Constants.php';
 require_once __DIR__ . '/../src/classes/User.php';
 
-if (($_SESSION['user_role'] ?? null) !== 1) {
-  header('Location: dashboard.php');
+if (($_SESSION['user_role'] ?? null) !== Constants::ROLE_ADMIN) {
+  header('Location: ' . APP_BASE . '/dashboard');
   exit();
 }
 
@@ -22,6 +22,7 @@ $messages = [
   ],
   'error' => [
     'empty_fields' => 'Please fill in all required fields.',
+    'username_exists' => 'Username already exists. Please choose a different username.',
     'failed' => 'Operation failed. Please try again.',
     'creation_failed' => 'Could not create employee. Possibly duplicate email or username.',
     'update_failed' => 'Could not update employee. Please review the details.',
@@ -42,8 +43,6 @@ foreach (['success', 'error'] as $type) {
 }
 
 $editModals = [];
-
-include __DIR__ . '/../src/includes/header.php';
 ?>
 
 <?php if ($alert): ?>
@@ -55,10 +54,12 @@ include __DIR__ . '/../src/includes/header.php';
 
 <div class="d-flex justify-content-between align-items-center mb-4">
   <h2><i class="bi bi-people"></i> Employee Management</h2>
+  <?php if (checkPermission($pdo, 'Create_User')): ?>
   <button class="btn btn-primary" type="button" data-bs-toggle="modal" data-bs-target="#addUserModal">
     <i class="bi bi-person-plus"></i>
     Add Employee
   </button>
+  <?php endif; ?>
 </div>
 
 <div class="card">
@@ -83,7 +84,7 @@ include __DIR__ . '/../src/includes/header.php';
           $fullName = trim($firstName . ' ' . $lastName);
           $userEmail = htmlspecialchars($user['user_email'] ?? '', ENT_QUOTES, 'UTF-8');
           $roleTitle = htmlspecialchars($user['role_title'] ?? '', ENT_QUOTES, 'UTF-8');
-          $isActive = ($user['user_status'] === 'Active');
+          $isActive = ($user['user_status'] === Constants::USER_STATUS_ACTIVE);
           $statusBadge = $isActive ? 'bg-success' : 'bg-danger';
 
           ob_start();
@@ -114,15 +115,15 @@ include __DIR__ . '/../src/includes/header.php';
                     <div class="col-md-6">
                       <label class="form-label" for="edit_status_<?php echo $userIdEsc; ?>">Status</label>
                       <select id="edit_status_<?php echo $userIdEsc; ?>" name="status" class="form-select">
-                        <option value="Active" <?php echo $user['user_status'] === 'Active' ? 'selected' : ''; ?>>Active</option>
-                        <option value="Inactive" <?php echo $user['user_status'] === 'Inactive' ? 'selected' : ''; ?>>Inactive</option>
+                        <option value="<?php echo Constants::USER_STATUS_ACTIVE; ?>" <?php echo $user['user_status'] === Constants::USER_STATUS_ACTIVE ? 'selected' : ''; ?>><?php echo Constants::USER_STATUS_ACTIVE; ?></option>
+                        <option value="<?php echo Constants::USER_STATUS_INACTIVE; ?>" <?php echo $user['user_status'] === Constants::USER_STATUS_INACTIVE ? 'selected' : ''; ?>><?php echo Constants::USER_STATUS_INACTIVE; ?></option>
                       </select>
                     </div>
                     <div class="col-md-6">
                       <label class="form-label" for="edit_role_<?php echo $userIdEsc; ?>">Role</label>
                       <select id="edit_role_<?php echo $userIdEsc; ?>" name="role_id" class="form-select">
-                        <option value="1" <?php echo ((int) ($user['user_role_id'] ?? 0) === 1) ? 'selected' : ''; ?>>Admin</option>
-                        <option value="2" <?php echo ((int) ($user['user_role_id'] ?? 0) === 2) ? 'selected' : ''; ?>>User</option>
+                        <option value="<?php echo Constants::ROLE_ADMIN; ?>" <?php echo ((int) ($user['user_role_id'] ?? 0) === Constants::ROLE_ADMIN) ? 'selected' : ''; ?>><?php echo Constants::getRoleName(Constants::ROLE_ADMIN); ?></option>
+                        <option value="<?php echo Constants::ROLE_USER; ?>" <?php echo ((int) ($user['user_role_id'] ?? 0) === Constants::ROLE_USER) ? 'selected' : ''; ?>><?php echo Constants::getRoleName(Constants::ROLE_USER); ?></option>
                       </select>
                     </div>
                   </div>
@@ -150,9 +151,12 @@ include __DIR__ . '/../src/includes/header.php';
             </span>
           </td>
           <td>
+            <?php if (checkPermission($pdo, 'Edit_User')): ?>
             <button class="btn btn-sm btn-outline-primary" type="button" data-bs-toggle="modal" data-bs-target="#editUser<?php echo $userIdEsc; ?>">
               <i class="bi bi-pencil"></i>
             </button>
+            <?php endif; ?>
+            <?php if (checkPermission($pdo, 'Edit_User')): ?>
             <button
               type="button"
               class="btn btn-sm btn-outline-danger user-deactivate-btn"
@@ -160,6 +164,7 @@ include __DIR__ . '/../src/includes/header.php';
             >
               <i class="bi bi-trash"></i>
             </button>
+            <?php endif; ?>
           </td>
         </tr>
 
@@ -198,8 +203,8 @@ include __DIR__ . '/../src/includes/header.php';
           <div class="col-md-6">
             <label class="form-label" for="role_id">Role</label>
             <select id="role_id" name="role_id" class="form-select">
-              <option value="1">Admin</option>
-              <option value="2">User</option>
+              <option value="<?php echo Constants::ROLE_ADMIN; ?>"><?php echo Constants::getRoleName(Constants::ROLE_ADMIN); ?></option>
+              <option value="<?php echo Constants::ROLE_USER; ?>"><?php echo Constants::getRoleName(Constants::ROLE_USER); ?></option>
             </select>
           </div>
           <div class="col-12">
@@ -209,8 +214,8 @@ include __DIR__ . '/../src/includes/header.php';
           <div class="col-12">
             <label class="form-label" for="status">Status</label>
             <select id="status" name="status" class="form-select">
-              <option value="Active">Active</option>
-              <option value="Inactive">Inactive</option>
+              <option value="<?php echo Constants::USER_STATUS_ACTIVE; ?>"><?php echo Constants::USER_STATUS_ACTIVE; ?></option>
+              <option value="<?php echo Constants::USER_STATUS_INACTIVE; ?>"><?php echo Constants::USER_STATUS_INACTIVE; ?></option>
             </select>
           </div>
         </div>
@@ -244,11 +249,11 @@ document.addEventListener('DOMContentLoaded', function () {
         login: String(formData.get('login') || '').trim(),
         role_id: Number(formData.get('role_id') || 0),
         password: String(formData.get('password') || '').trim(),
-        status: String(formData.get('status') || 'Active')
+        status: String(formData.get('status') || '<?php echo Constants::USER_STATUS_ACTIVE; ?>')
       };
 
       if (!payload.first_name || !payload.last_name || !payload.email || !payload.login || payload.role_id <= 0 || !payload.password) {
-        window.location.href = 'users.php?error=empty_fields';
+        window.location.href = '<?php echo APP_BASE; ?>/users?error=empty_fields';
         return;
       }
 
@@ -259,13 +264,18 @@ document.addEventListener('DOMContentLoaded', function () {
         });
 
         if (response.success) {
-          window.location.href = 'users.php?success=user_added';
+          window.location.href = '<?php echo APP_BASE; ?>/users?success=user_added';
           return;
         }
 
-        window.location.href = 'users.php?error=creation_failed';
+        if (response.message && response.message.includes('already exists')) {
+          window.location.href = '<?php echo APP_BASE; ?>/users?error=username_exists';
+          return;
+        }
+
+        window.location.href = '<?php echo APP_BASE; ?>/users?error=creation_failed';
       } catch (error) {
-        window.location.href = 'users.php?error=failed';
+        window.location.href = '<?php echo APP_BASE; ?>/users?error=failed';
       }
     });
   }
@@ -281,11 +291,11 @@ document.addEventListener('DOMContentLoaded', function () {
         last_name: String(formData.get('last_name') || '').trim(),
         email: String(formData.get('email') || '').trim(),
         role_id: Number(formData.get('role_id') || 0),
-        status: String(formData.get('status') || 'Active')
+        status: String(formData.get('status') || '<?php echo Constants::USER_STATUS_ACTIVE; ?>')
       };
 
       if (userId <= 0 || !payload.first_name || !payload.last_name || !payload.email || payload.role_id <= 0) {
-        window.location.href = 'users.php?error=empty_fields';
+        window.location.href = '<?php echo APP_BASE; ?>/users?error=empty_fields';
         return;
       }
 
@@ -296,13 +306,13 @@ document.addEventListener('DOMContentLoaded', function () {
         });
 
         if (response.success) {
-          window.location.href = 'users.php?success=user_updated';
+          window.location.href = '<?php echo APP_BASE; ?>/users?success=user_updated';
           return;
         }
 
-        window.location.href = 'users.php?error=update_failed';
+        window.location.href = '<?php echo APP_BASE; ?>/users?error=update_failed';
       } catch (error) {
-        window.location.href = 'users.php?error=failed';
+        window.location.href = '<?php echo APP_BASE; ?>/users?error=failed';
       }
     });
   });
@@ -311,7 +321,7 @@ document.addEventListener('DOMContentLoaded', function () {
     deactivateBtn.addEventListener('click', async function () {
       const userId = Number(deactivateBtn.getAttribute('data-user-id') || 0);
       if (userId <= 0) {
-        window.location.href = 'users.php?error=invalid_user';
+        window.location.href = '<?php echo APP_BASE; ?>/users?error=invalid_user';
         return;
       }
 
@@ -325,17 +335,15 @@ document.addEventListener('DOMContentLoaded', function () {
         });
 
         if (response.success) {
-          window.location.href = 'users.php?success=deactivated';
+          window.location.href = '<?php echo APP_BASE; ?>/users?success=deactivated';
           return;
         }
 
-        window.location.href = 'users.php?error=failed';
+        window.location.href = '<?php echo APP_BASE; ?>/users?error=failed';
       } catch (error) {
-        window.location.href = 'users.php?error=failed';
+        window.location.href = '<?php echo APP_BASE; ?>/users?error=failed';
       }
     });
   });
 });
 </script>
-
-<?php include __DIR__ . '/../src/includes/footer.php'; ?>

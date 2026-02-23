@@ -1,4 +1,5 @@
 
+
 CREATE TABLE user_roles (
     role_id INT PRIMARY KEY AUTO_INCREMENT,
     role_title VARCHAR(50) NOT NULL,
@@ -31,10 +32,8 @@ INSERT INTO user_roles (role_id, role_title, role_status) VALUES
 (1, 'Admin', 'Active'),
 (2, 'User', 'Active');
 
-
 INSERT INTO users (user_login, user_email, user_password, user_role_id) VALUES 
 ('admin_user', 'admin@taskflow.com', '$2y$10$bPBuJWImOODXwS.U5AHZCOh7jGbR2bhRNem3I9zuk9ZcP6OMbnY6O', 1);
-
 
 CREATE TABLE user_login_records (
     login_id INT PRIMARY KEY AUTO_INCREMENT,
@@ -47,13 +46,11 @@ CREATE TABLE user_login_records (
         ON DELETE CASCADE
 );
 
-
 CREATE TABLE user_access_rights (
     right_id INT PRIMARY KEY AUTO_INCREMENT,
     right_title VARCHAR(50) NOT NULL,
     right_status ENUM('Active', 'Inactive') DEFAULT 'Active'
 );
-
 
 CREATE TABLE user_role_mapping (
     access_map_id INT PRIMARY KEY AUTO_INCREMENT,
@@ -63,7 +60,6 @@ CREATE TABLE user_role_mapping (
     FOREIGN KEY (access_role_id) REFERENCES user_roles(role_id),
     FOREIGN KEY (access_right_id) REFERENCES user_access_rights(right_id)
 );
-
 
 CREATE TABLE projects (
     project_id INT PRIMARY KEY AUTO_INCREMENT,
@@ -75,7 +71,6 @@ CREATE TABLE projects (
     project_modified_on TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     project_modified_by INT
 );
-
 
 CREATE TABLE tasks (
     task_id INT PRIMARY KEY AUTO_INCREMENT,
@@ -93,8 +88,18 @@ CREATE TABLE tasks (
     FOREIGN KEY (task_assigned_to) REFERENCES users(user_id)
 );
 
-
 INSERT INTO user_access_rights (right_id, right_title) VALUES 
 (1, 'Create_User'), (2, 'Edit_User'), (3, 'List_User'),
-(4, 'Create_Project'), (5, 'List_Project'), (6, 'Edit_Project'),
-(7, 'Create_Task'), (8, 'List_Task'), (9, 'Edit_Task');
+(4, 'Create_Project'), (5, 'Edit_Project'), (6, 'List_Project'),
+(7, 'Create_Task'), (8, 'Edit_Task'), (9, 'List_Task');
+
+INSERT INTO `user_role_mapping` (`access_role_id`, `access_right_id`, `access_status`)
+SELECT 1, `right_id`, 'Yes' FROM `user_access_rights`;
+
+INSERT INTO `user_role_mapping` (`access_role_id`, `access_right_id`, `access_status`)
+SELECT 2, `right_id`, 'No' FROM `user_access_rights`;
+
+UPDATE `user_role_mapping` 
+SET `access_status` = 'Yes' 
+WHERE `access_role_id` = 2 
+AND `access_right_id` IN (SELECT `right_id` FROM `user_access_rights` WHERE `right_title` IN ('List_Project', 'Create_Task', 'List_Task', 'Edit_Task'));

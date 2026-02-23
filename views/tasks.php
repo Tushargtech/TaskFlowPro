@@ -3,14 +3,14 @@
 declare(strict_types=1);
 
 require_once __DIR__ . '/../config/db.php';
-require_once __DIR__ . '/../src/includes/auth_middleware.php';
+require_once __DIR__ . '/../src/classes/Constants.php';
 require_once __DIR__ . '/../src/classes/Task.php';
 require_once __DIR__ . '/../src/classes/Project.php';
 
 $taskObj = new Task($pdo);
 $userId = (int) ($_SESSION['user_id'] ?? 0);
 $userRole = $_SESSION['user_role'] ?? null;
-$isAdmin = ($userRole === 1);
+$isAdmin = ($userRole === Constants::ROLE_ADMIN);
 
 $tasks = $isAdmin ? $taskObj->getTasks() : $taskObj->getTasks($userId);
 
@@ -26,12 +26,12 @@ $dueSoonThreshold = $today->modify('+7 days');
 
 foreach ($tasks as $task) {
     $status = $task['task_status'] ?? '';
-    if ($status === 'Completed') {
+    if ($status === Constants::TASK_STATUS_COMPLETED) {
         $summary['completed']++;
     }
 
     $dueDateString = $task['task_due_date'] ?? null;
-  if ($dueDateString && $status === 'Due') {
+  if ($dueDateString && $status === Constants::TASK_STATUS_DUE) {
         $dueDateObject = DateTimeImmutable::createFromFormat('Y-m-d', $dueDateString);
         if ($dueDateObject === false) {
             $dueDateObject = new DateTimeImmutable($dueDateString);
@@ -55,19 +55,19 @@ if ($isAdmin) {
     $employeeStmt = $pdo->query(
         "SELECT user_id, CONCAT(COALESCE(user_first_name, ''), ' ', COALESCE(user_last_name, '')) AS full_name
          FROM users
-         WHERE user_status = 'Active'
+         WHERE user_status = '" . Constants::USER_STATUS_ACTIVE . "'
          ORDER BY full_name"
     );
     $employees = $employeeStmt->fetchAll(PDO::FETCH_ASSOC);
 }
 
-$statusOptions = ['Due', 'Completed', 'Inactive'];
+$statusOptions = Constants::TASK_STATUSES;
 
 $messages = [
   'success' => [
     'task_created' => 'Task assigned successfully.',
-    'task_completed' => 'Task marked as completed.',
-    'task_updated' => 'Task updated successfully.',
+    Constants::MSG_TASK_COMPLETED => 'Task marked as completed.',
+    Constants::MSG_TASK_UPDATED => 'Task updated successfully.',
   ],
   'error' => [
     'unauthorized' => 'You are not authorized to perform that action.',
@@ -96,8 +96,6 @@ foreach (['success', 'error'] as $type) {
 
 $canAssign = $isAdmin && !empty($projects) && !empty($employees);
 $editModals = [];
-
-include __DIR__ . '/../src/includes/header.php';
 ?>
 
 <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3 mb-4">
@@ -105,7 +103,7 @@ include __DIR__ . '/../src/includes/header.php';
     <h2 class="mb-1"><i class="bi bi-kanban"></i> Task Manager</h2>
     <p class="text-muted mb-0">Stay ahead of deadlines and keep assignments organized.</p>
   </div>
-  <?php if ($isAdmin): ?>
+  <?php if (checkPermission($pdo, 'Create_Task')): ?>
   <button class="btn btn-primary" type="button" data-bs-toggle="modal" data-bs-target="#addTaskModal" <?php echo $canAssign ? '' : 'disabled'; ?>>
     <i class="bi bi-plus-circle"></i>
     Assign New Task
@@ -185,16 +183,16 @@ include __DIR__ . '/../src/includes/header.php';
           $taskId = (int) $task['task_id'];
           $taskIdEsc = htmlspecialchars((string) $taskId, ENT_QUOTES, 'UTF-8');
           $title = $task['task_title'] ?? '';
-            $status = $task['task_status'] ?? 'Due';
+            $status = $task['task_status'] ?? Constants::TASK_STATUS_DUE;
           $assignedName = trim((string) ($task['assigned_name'] ?? '')) ?: 'Unassigned';
           $assignedTo = (int) ($task['task_assigned_to'] ?? 0);
-          $isCompleted = ($status === 'Completed');
-            $canComplete = ($status === 'Due') && ($isAdmin || $assignedTo === $userId);
+          $isCompleted = ($status === Constants::TASK_STATUS_COMPLETED);
+            $canComplete = ($status === Constants::TASK_STATUS_DUE) && ($isAdmin || $assignedTo === $userId);
 
           $statusClass = 'bg-warning text-dark';
-          if ($status === 'Completed') {
+          if ($status === Constants::TASK_STATUS_COMPLETED) {
               $statusClass = 'bg-success';
-            } elseif ($status === 'Inactive') {
+            } elseif ($status === Constants::TASK_STATUS_INACTIVE) {
               $statusClass = 'bg-secondary';
           }
 
@@ -202,7 +200,7 @@ include __DIR__ . '/../src/includes/header.php';
           $dueDisplay = $dueRaw ? date('M d, Y', strtotime($dueRaw)) : 'No due date';
           $dueBadge = null;
 
-            if ($dueRaw && $status === 'Due') {
+            if ($dueRaw && $status === Constants::TASK_STATUS_DUE) {
               $dueDateObject = DateTimeImmutable::createFromFormat('Y-m-d', $dueRaw);
               if ($dueDateObject === false) {
                   $dueDateObject = new DateTimeImmutable($dueRaw);
@@ -387,7 +385,7 @@ async function completeTask(taskId) {
   try {
     const response = await window.apiRequest('tasks/' + taskId, {
       method: 'PUT',
-      body: JSON.stringify({ status: 'Completed' })
+      body: JSON.stringify({ status: '<?php echo Constants::TASK_STATUS_COMPLETED; ?>' })
     });
 
     if (!response.success) {
@@ -406,7 +404,7 @@ async function completeTask(taskId) {
 
     if (statusBadge) {
       statusBadge.className = 'badge task-status-badge bg-success';
-      statusBadge.textContent = 'Completed';
+      statusBadge.textContent = '<?php echo Constants::TASK_STATUS_COMPLETED; ?>';
     }
   } catch (error) {
     alert(error.message || 'Error updating task status.');
@@ -453,7 +451,7 @@ document.addEventListener('DOMContentLoaded', function () {
       };
 
       if (!payload.title || payload.project_id <= 0 || payload.assigned_to <= 0 || !payload.due_date) {
-        window.location.href = 'tasks.php?error=invalid_input';
+        window.location.href = '<?php echo APP_BASE; ?>/tasks?error=invalid_input';
         return;
       }
 
@@ -464,13 +462,13 @@ document.addEventListener('DOMContentLoaded', function () {
         });
 
         if (response.success) {
-          window.location.href = 'tasks.php?success=task_created';
+          window.location.href = '<?php echo APP_BASE; ?>/tasks?success=task_created';
           return;
         }
 
-        window.location.href = 'tasks.php?error=task_failed';
+        window.location.href = '<?php echo APP_BASE; ?>/tasks?error=task_failed';
       } catch (error) {
-        window.location.href = 'tasks.php?error=task_exception';
+        window.location.href = '<?php echo APP_BASE; ?>/tasks?error=task_exception';
       }
     });
   }
@@ -487,11 +485,11 @@ document.addEventListener('DOMContentLoaded', function () {
         project_id: Number(formData.get('project_id') || 0),
         assigned_to: Number(formData.get('assigned_to') || 0),
         due_date: String(formData.get('task_due_date') || '').trim(),
-        status: String(formData.get('task_status') || 'Due')
+        status: String(formData.get('task_status') || '<?php echo Constants::TASK_STATUS_DUE; ?>')
       };
 
       if (taskId <= 0 || !payload.title || payload.project_id <= 0 || payload.assigned_to <= 0 || !payload.due_date || !payload.status) {
-        window.location.href = 'tasks.php?error=invalid_input';
+        window.location.href = '<?php echo APP_BASE; ?>/tasks?error=invalid_input';
         return;
       }
 
@@ -502,17 +500,15 @@ document.addEventListener('DOMContentLoaded', function () {
         });
 
         if (response.success) {
-          window.location.href = 'tasks.php?success=task_updated';
+          window.location.href = '<?php echo APP_BASE; ?>/tasks?success=task_updated';
           return;
         }
 
-        window.location.href = 'tasks.php?error=task_update_failed';
+        window.location.href = '<?php echo APP_BASE; ?>/tasks?error=task_update_failed';
       } catch (error) {
-        window.location.href = 'tasks.php?error=task_update_failed';
+        window.location.href = '<?php echo APP_BASE; ?>/tasks?error=task_update_failed';
       }
     });
   });
 });
 </script>
-
-<?php include __DIR__ . '/../src/includes/footer.php'; ?>

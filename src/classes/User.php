@@ -61,6 +61,13 @@ class User
         return $user ?: null;
     }
 
+    public function usernameExists(string $username): bool
+    {
+        $stmt = $this->pdo->prepare("SELECT 1 FROM users WHERE user_login = ?");
+        $stmt->execute([$username]);
+        return $stmt->rowCount() > 0;
+    }
+
     public function createUser(array $data): bool
     {
         if (session_status() !== PHP_SESSION_ACTIVE) {
@@ -137,5 +144,53 @@ class User
 
         header('Location: ../../index.php');
         exit();
+    }
+
+    public function hasRight(string $rightTitle): bool
+    {
+        if (session_status() !== PHP_SESSION_ACTIVE) {
+            session_start();
+        }
+
+        $roleId = $_SESSION['user_role'] ?? null;
+        
+        if ($roleId === null) {
+            return false;
+        }
+
+        $sql = "SELECT m.access_status 
+                FROM user_role_mapping m
+                JOIN user_access_rights r ON m.access_right_id = r.right_id
+                WHERE m.access_role_id = :role_id AND r.right_title = :right_title AND m.access_status = 'Yes'";
+        
+        $stmt = $this->pdo->prepare($sql);
+        $stmt->execute(['role_id' => $roleId, 'right_title' => $rightTitle]);
+        $result = $stmt->fetch(PDO::FETCH_ASSOC);
+        
+        return $result !== false;
+    }
+
+    public function getUserRights(): array
+    {
+        if (session_status() !== PHP_SESSION_ACTIVE) {
+            session_start();
+        }
+
+        $roleId = $_SESSION['user_role'] ?? null;
+        
+        if ($roleId === null) {
+            return [];
+        }
+
+        $sql = "SELECT r.right_title, r.right_id, m.access_status
+                FROM user_role_mapping m
+                JOIN user_access_rights r ON m.access_right_id = r.right_id
+                WHERE m.access_role_id = :role_id AND r.right_status = 'Active'
+                ORDER BY r.right_title";
+        
+        $stmt = $this->pdo->prepare($sql);
+        $stmt->execute(['role_id' => $roleId]);
+        
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
 }

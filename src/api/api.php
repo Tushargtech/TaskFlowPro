@@ -5,6 +5,7 @@ declare(strict_types=1);
 header('Content-Type: application/json');
 
 require_once __DIR__ . '/../../config/db.php';
+require_once __DIR__ . '/../classes/Constants.php';
 require_once __DIR__ . '/../classes/User.php';
 require_once __DIR__ . '/../classes/Project.php';
 require_once __DIR__ . '/../classes/Task.php';
@@ -22,7 +23,7 @@ $request = $pathInfo === '' ? [] : explode('/', $pathInfo);
 $resource = $request[0] ?? '';
 $id = isset($request[1]) ? (int) $request[1] : null;
 
-if (in_array($method, ['POST', 'PUT', 'DELETE'], true)) {
+if (in_array($method, [Constants::METHOD_POST, Constants::METHOD_PUT, Constants::METHOD_DELETE], true)) {
     validateCsrfToken();
 }
 
@@ -66,7 +67,7 @@ function validateRequired(array $input, array $required): void
 
 function requireAdmin(): void
 {
-    if (($_SESSION['user_role'] ?? null) !== 1) {
+    if (($_SESSION['user_role'] ?? null) !== Constants::ROLE_ADMIN) {
         respond(['message' => 'Unauthorized'], 403);
     }
 }

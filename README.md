@@ -49,97 +49,74 @@
    - Role-aware navigation
 
 ## Setup Instructions
-
-### Prerequisites
-- XAMPP/LAMPP stack with PHP 8.0+
-- MySQL server running
-- Git for version control
-
-### Installation Steps
-
-1. **Clone the repository:**
-   ```bash
-   git clone https://github.com/Tushargtech/TaskFlowPro.git
-   cd TaskFlowPro
-   ```
-
-2. **Configure database connection:**
-   - Edit `config/db.php`
-   - Update MySQL credentials (host, user, password)
-   - Ensure database name is `taskflow_db`
-
-3. **Create database and tables:**
-   - Import `database/schema.sql` into MySQL:
-     ```bash
-     mysql -u root -p taskflow_db < database/schema.sql
-     ```
-
-4. **Set file permissions:**
-   - Ensure `uploads/` directory exists and is writable
-   - Ensure `public/` directory is accessible
-
-5. **Start Apache and MySQL:**
-   ```bash
-   sudo /opt/lampp/lampp start  # or xampp start on Windows
-   ```
-
-6. **Access the application:**
-   - Navigate to `http://localhost/TaskFlowPro/`
-   - You will be redirected to login
+1. Configure database in config/db.php
+2. Import database/schema.sql into your MySQL database
+3. Start Apache and MySQL
+4. Open the app at http://taskflowpro.infinityfreeapp.com
 
 ## Test Credentials
-
-| Role | Login | Password |
-|------|-------|----------|
-| Admin | `admin_user` | `admin123` |
-
-**Note:** Seed the database with additional employees via the Employee Management page to test task assignment workflows.
+- Admin
+  - email: admin@taskflow.com
+  - Password: admin123
+- User
+  - email: kush@ks.com
+  - password: kush@123
 
 ## API Endpoints
-All endpoints require an active session.
-| Method | Endpoint | Description |
-| :--- | :--- | :--- |
-| GET | `/api/users` | List all employees |
-| POST | `/api/projects` | Create a new project |
-| PUT | `/api/tasks/{id}` | Update task status |
-| DELETE | `/api/users/{id}` | Deactivate an employee |
+- GET /api/users
+- GET /api/users/{id}
+- POST /api/users
+- PUT /api/users/{id}
+- DELETE /api/users/{id}
+- GET /api/projects
+- GET /api/projects/{id}
+- POST /api/projects
+- PUT /api/projects/{id}
+- DELETE /api/projects/{id}
+- GET /api/tasks
+- GET /api/tasks/{id}
+- POST /api/tasks
+- PUT /api/tasks/{id}
 
 ## Known Limitations
-
-1. **Search Bar:** Currently non-functional placeholder; backend search logic not yet implemented
-2. **Task Filtering:** No project-specific task filtering; future enhancement planned
-3. **Permissions:** RBAC scaffold exists but full permission matrix not enforced in all views
-4. **File Uploads:** Uploads directory created but no file attachment feature implemented
-5. **Email Notifications:** No email alerts for task assignments or due dates
-6. **Audit Trail:** Login records captured; full audit log for all actions pending
-7. **Task Deletion:** No hard delete; soft delete (status change) only
-8. **Mobile Optimization:** Responsive but not fully tested on small screens
+- RBAC is enforced in the UI; some API actions still use admin-only checks instead of per-right evaluation.
+- No password reset or email verification flow.
+- No pagination or server-side filtering for large user/project/task lists.
+- No file uploads or task attachments.
+- No email or in-app notifications for assignments and due dates.
+- Audit trail is limited to login records; other actions are not logged.
+- Mobile layout is responsive and functional, but only basic cross-device testing has been performed.
 
 ## Screenshots
 
 ### Login Page
+![Login Page](public/screenshots/login.png)
 - Email/login input field
 - Password field with secure handling
 - Bootstrap alert for invalid credentials
 
 ### Dashboard
+![Dashboard](public/screenshots/dashboard.png)
 - Quick stats cards (Total Projects, Active Tasks, Team Members)
 - Role-aware navigation (Admin sees Employees link)
 - Responsive grid layout
 
 ### Employee Management
+![Employee Management](public/screenshots/employee.png)
 - Table with employee list
 - Add/Edit modals with validation
 - Status indicators (Active/Inactive)
 - Action buttons (Edit, Deactivate)
 
 ### Project Board
+![Project Board](public/screenshots/project.png)
 - Card layout for projects
 - Admin Edit button per project
 - Status badge (Active/Inactive)
 - Create New Project modal
 
 ### Task Manager
+![Task Manager](public/screenshots/task.png)
 - Analytics cards (Total, Completed, Due Soon, Overdue)
 - Responsive table with task details
 - Status badges with color coding

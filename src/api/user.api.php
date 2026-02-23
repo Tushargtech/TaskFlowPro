@@ -5,7 +5,7 @@ declare(strict_types=1);
 function handleUsers(string $method, ?int $id, User $userObj): void
 {
     switch ($method) {
-        case 'GET':
+        case Constants::METHOD_GET:
             if ($id !== null) {
                 $user = $userObj->getUserById($id);
                 if ($user === null) {
@@ -15,24 +15,30 @@ function handleUsers(string $method, ?int $id, User $userObj): void
             }
             respond($userObj->getAllUsers());
             break;
-        case 'POST':
+        case Constants::METHOD_POST:
             requireAdmin();
             $input = readJsonInput();
             validateRequired($input, ['login', 'email', 'password', 'first_name', 'last_name', 'role_id']);
+            
+            $username = trim($input['login']);
+            if ($userObj->usernameExists($username)) {
+                respond(['success' => false, 'message' => 'Username already exists. Please choose a different username.'], 422);
+            }
+            
             $payload = [
-                'login' => $input['login'],
+                'login' => $username,
                 'email' => $input['email'],
                 'password' => $input['password'],
                 'first_name' => $input['first_name'],
                 'last_name' => $input['last_name'],
                 'role_id' => (int) $input['role_id'],
-                'status' => $input['status'] ?? 'Active',
+                'status' => $input['status'] ?? Constants::USER_STATUS_ACTIVE,
             ];
 
             $success = $userObj->createUser($payload);
             respond(['success' => $success], $success ? 201 : 400);
             break;
-        case 'PUT':
+        case Constants::METHOD_PUT:
             requireAdmin();
             if ($id === null) {
                 respond(['message' => 'User id is required'], 400);
@@ -52,7 +58,7 @@ function handleUsers(string $method, ?int $id, User $userObj): void
             $success = $userObj->updateUser($payload);
             respond(['success' => $success]);
             break;
-        case 'DELETE':
+        case Constants::METHOD_DELETE:
             requireAdmin();
             if ($id === null) {
                 respond(['message' => 'User id is required'], 400);

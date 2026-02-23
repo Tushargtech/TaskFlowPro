@@ -5,16 +5,16 @@ declare(strict_types=1);
 function handleProjects(string $method, ?int $id, Project $projectObj): void
 {
     switch ($method) {
-        case 'GET':
+        case Constants::METHOD_GET:
             $data = $id !== null ? $projectObj->getProjectById($id) : $projectObj->getAllProjects();
             respond($data ?? ['message' => 'Project not found'], $data ? 200 : 404);
             break;
-        case 'POST':
+        case Constants::METHOD_POST:
             requireAdmin();
             $input = readJsonInput();
             $title = $input['title'] ?? '';
             $description = $input['desc'] ?? ($input['description'] ?? null);
-            $status = $input['status'] ?? 'Active';
+            $status = $input['status'] ?? Constants::PROJECT_STATUS_ACTIVE;
             $createdBy = (int) ($_SESSION['user_id'] ?? 0);
             if ($title === '' || $createdBy <= 0) {
                 respond(['message' => 'Invalid input'], 422);
@@ -22,7 +22,7 @@ function handleProjects(string $method, ?int $id, Project $projectObj): void
             $success = $projectObj->createProject($title, $description, $createdBy, $status);
             respond(['success' => $success], $success ? 201 : 400);
             break;
-        case 'PUT':
+        case Constants::METHOD_PUT:
             requireAdmin();
             if ($id === null) {
                 respond(['message' => 'Project id is required'], 400);
@@ -35,7 +35,7 @@ function handleProjects(string $method, ?int $id, Project $projectObj): void
             $success = $projectObj->updateProject($input);
             respond(['success' => $success]);
             break;
-        case 'DELETE':
+        case Constants::METHOD_DELETE:
             requireAdmin();
             if ($id === null) {
                 respond(['message' => 'Project id is required'], 400);

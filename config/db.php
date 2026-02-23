@@ -1,8 +1,8 @@
 <?php
-$host = 'localhost';
-$db   = 'taskflow_db';
-$user = 'root';
-$pass = ''; 
+$host = 'sql111.infinityfree.com';
+$db   = 'if0_41221606_taskflowpro';
+$user = 'if0_41221606';
+$pass = 'Tushargarg123';
 $charset = 'utf8mb4';
 
 $dsn = "mysql:host=$host;dbname=$db;charset=$charset";

@@ -1,5 +1,7 @@
 RewriteEngine On
-# Redirect /api/resource/id to src/api/api.php
+RewriteRule ^views/(dashboard|users|projects|tasks)\.php$ index.php?url=$1 [L,QSA,NC]
+RewriteRule ^(dashboard|users|projects|tasks|login|logout)\.php$ index.php?url=$1 [L,QSA,NC]
+RewriteRule ^api/(.*)$ index.php?url=api/$1 [L,QSA,NC]
 RewriteCond %{REQUEST_FILENAME} !-f
 RewriteCond %{REQUEST_FILENAME} !-d
-RewriteRule ^api/(.*)$ src/api/api.php/$1 [L,QSA]
+RewriteRule ^(.*)$ index.php?url=$1 [L,QSA]

@@ -3,7 +3,7 @@
 declare(strict_types=1);
 
 require_once __DIR__ . '/../config/db.php';
-require_once __DIR__ . '/../src/includes/auth_middleware.php';
+require_once __DIR__ . '/../src/classes/Constants.php';
 require_once __DIR__ . '/../src/classes/Project.php';
 
 $projectObj = new Project($pdo);
@@ -11,16 +11,16 @@ $projects = $projectObj->getAllProjects();
 
 $messages = [
     'success' => [
-        'project_created' => 'Project created successfully.',
-    'project_updated' => 'Project updated successfully.',
+        Constants::MSG_PROJECT_CREATED => 'Project created successfully.',
+        Constants::MSG_PROJECT_UPDATED => 'Project updated successfully.',
     ],
     'error' => [
-        'invalid_input' => 'Project title is required.',
+        Constants::MSG_INVALID_INPUT => 'Project title is required.',
         'create_failed' => 'Unable to create the project. Please try again.',
         'create_exception' => 'Unexpected error creating the project.',
-      'unauthorized' => 'You are not authorized to perform that action.',
-    'update_failed' => 'Unable to update the project. Please try again.',
-    'update_exception' => 'Unexpected error updating the project.',
+        Constants::MSG_UNAUTHORIZED => 'You are not authorized to perform that action.',
+        'update_failed' => 'Unable to update the project. Please try again.',
+        'update_exception' => 'Unexpected error updating the project.',
     ],
 ];
 
@@ -36,11 +36,9 @@ foreach (['success', 'error'] as $type) {
 }
 
 $userRole = $_SESSION['user_role'] ?? null;
-$isAdmin = ($userRole === 1);
-$statusOptions = ['Active', 'Inactive'];
+$isAdmin = ($userRole === Constants::ROLE_ADMIN);
+$statusOptions = Constants::PROJECT_STATUSES;
 $editModals = [];
-
-include __DIR__ . '/../src/includes/header.php';
 ?>
 
 <?php if ($alert): ?>
@@ -52,14 +50,13 @@ include __DIR__ . '/../src/includes/header.php';
 
 <div class="d-flex justify-content-between align-items-center mb-4">
   <h2><i class="bi bi-kanban"></i> Projects</h2>
-  <?php if ($isAdmin): ?>
+  <?php if (checkPermission($pdo, 'Create_Project')): ?>
   <button class="btn btn-success" type="button" data-bs-toggle="modal" data-bs-target="#addProjectModal">
     <i class="bi bi-plus-lg"></i>
     New Project
   </button>
   <?php endif; ?>
 </div>
-
 <div class="row">
   <?php if (empty($projects)): ?>
   <div class="col-12">
@@ -88,7 +85,7 @@ include __DIR__ . '/../src/includes/header.php';
         </span>
       </div>
       <div class="card-footer bg-transparent">
-        <a href="tasks.php" class="btn btn-sm btn-link">View Tasks</a>
+        <a href="<?php echo APP_BASE; ?>/tasks" class="btn btn-sm btn-link">View Tasks</a>
         <?php if ($isAdmin): ?>
         <button class="btn btn-sm btn-outline-primary float-end" type="button" data-bs-toggle="modal" data-bs-target="#editProjectModal<?php echo $projectIdEsc; ?>">Edit</button>
         <?php else: ?>
@@ -102,7 +99,7 @@ include __DIR__ . '/../src/includes/header.php';
     $modalIdEsc = htmlspecialchars($modalId, ENT_QUOTES, 'UTF-8');
     $projectTitle = $project['project_title'] ?? '';
     $projectDescription = $project['project_description'] ?? '';
-    $projectStatus = $project['project_status'] ?? 'Active';
+    $projectStatus = $project['project_status'] ?? Constants::PROJECT_STATUS_ACTIVE;
     ob_start();
   ?>
   <div class="modal fade" id="<?php echo $modalIdEsc; ?>" tabindex="-1" aria-labelledby="<?php echo $modalIdEsc; ?>Label" aria-hidden="true">
@@ -169,8 +166,8 @@ include __DIR__ . '/../src/includes/header.php';
         <div class="mb-3">
           <label class="form-label" for="project_status">Status</label>
           <select id="project_status" name="project_status" class="form-select">
-            <option value="Active" selected>Active</option>
-            <option value="Inactive">Inactive</option>
+            <option value="<?php echo Constants::PROJECT_STATUS_ACTIVE; ?>" selected><?php echo Constants::PROJECT_STATUS_ACTIVE; ?></option>
+            <option value="<?php echo Constants::PROJECT_STATUS_INACTIVE; ?>"><?php echo Constants::PROJECT_STATUS_INACTIVE; ?></option>
           </select>
         </div>
       </div>
@@ -193,11 +190,11 @@ document.addEventListener('DOMContentLoaded', function () {
       const payload = {
         title: String(formData.get('project_title') || '').trim(),
         description: String(formData.get('project_description') || '').trim(),
-        status: String(formData.get('project_status') || 'Active')
+        status: String(formData.get('project_status') || '<?php echo Constants::PROJECT_STATUS_ACTIVE; ?>')
       };
 
       if (!payload.title) {
-        window.location.href = 'projects.php?error=invalid_input';
+        window.location.href = '<?php echo APP_BASE; ?>/projects?error=invalid_input';
         return;
       }
 
@@ -208,13 +205,13 @@ document.addEventListener('DOMContentLoaded', function () {
         });
 
         if (response.success) {
-          window.location.href = 'projects.php?success=project_created';
+          window.location.href = '<?php echo APP_BASE; ?>/projects?success=project_created';
           return;
         }
 
-        window.location.href = 'projects.php?error=create_failed';
+        window.location.href = '<?php echo APP_BASE; ?>/projects?error=create_failed';
       } catch (error) {
-        window.location.href = 'projects.php?error=create_exception';
+        window.location.href = '<?php echo APP_BASE; ?>/projects?error=create_exception';
       }
     });
   }
@@ -228,11 +225,11 @@ document.addEventListener('DOMContentLoaded', function () {
       const payload = {
         title: String(formData.get('project_title') || '').trim(),
         description: String(formData.get('project_description') || '').trim(),
-        status: String(formData.get('project_status') || 'Active')
+        status: String(formData.get('project_status') || '<?php echo Constants::PROJECT_STATUS_ACTIVE; ?>')
       };
 
       if (projectId <= 0 || !payload.title) {
-        window.location.href = 'projects.php?error=invalid_input';
+        window.location.href = '<?php echo APP_BASE; ?>/projects?error=invalid_input';
         return;
       }
 
@@ -243,17 +240,15 @@ document.addEventListener('DOMContentLoaded', function () {
         });
 
         if (response.success) {
-          window.location.href = 'projects.php?success=project_updated';
+          window.location.href = '<?php echo APP_BASE; ?>/projects?success=project_updated';
           return;
         }
 
-        window.location.href = 'projects.php?error=update_failed';
+        window.location.href = '<?php echo APP_BASE; ?>/projects?error=update_failed';
       } catch (error) {
-        window.location.href = 'projects.php?error=update_exception';
+        window.location.href = '<?php echo APP_BASE; ?>/projects?error=update_exception';
       }
     });
   });
 });
 </script>
-
-<?php include __DIR__ . '/../src/includes/footer.php'; ?>

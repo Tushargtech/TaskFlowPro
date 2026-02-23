@@ -3,13 +3,11 @@
 declare(strict_types=1);
 
 require_once __DIR__ . '/../config/db.php';
-require_once __DIR__ . '/../src/includes/auth_middleware.php';
+require_once __DIR__ . '/../src/classes/Constants.php';
 
 $userCount = (int) $pdo->query('SELECT COUNT(*) FROM users')->fetchColumn();
 $projectCount = (int) $pdo->query('SELECT COUNT(*) FROM projects')->fetchColumn();
-$taskCount = (int) $pdo->query("SELECT COUNT(*) FROM tasks WHERE task_status = 'Due'")->fetchColumn();
-
-include __DIR__ . '/../src/includes/header.php';
+$taskCount = (int) $pdo->query("SELECT COUNT(*) FROM tasks WHERE task_status = '" . Constants::TASK_STATUS_DUE . "'")->fetchColumn();
 ?>
 
       <div class="row g-4 text-center">
@@ -43,20 +41,19 @@ include __DIR__ . '/../src/includes/header.php';
         <div class="col-12">
           <div class="list-group shadow-sm">
             <?php if (($_SESSION['user_role'] ?? null) === 1): ?>
-            <a href="users.php" class="list-group-item list-group-item-action d-flex align-items-center">
+            <a href="<?php echo APP_BASE; ?>/users" class="list-group-item list-group-item-action d-flex align-items-center">
               <i class="bi bi-people-fill me-2"></i>
               Manage Employees
             </a>
             <?php endif; ?>
-            <a href="projects.php" class="list-group-item list-group-item-action d-flex align-items-center">
+            <a href="<?php echo APP_BASE; ?>/projects" class="list-group-item list-group-item-action d-flex align-items-center">
               <i class="bi bi-kanban me-2"></i>
               Manage Projects
             </a>
-            <a href="tasks.php" class="list-group-item list-group-item-action d-flex align-items-center">
+            <a href="<?php echo APP_BASE; ?>/tasks" class="list-group-item list-group-item-action d-flex align-items-center">
               <i class="bi bi-list-task me-2"></i>
               My Tasks
             </a>
           </div>
         </div>
       </div>
-<?php include __DIR__ . '/../src/includes/footer.php'; ?>
