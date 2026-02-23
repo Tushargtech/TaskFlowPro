@@ -25,6 +25,7 @@ class User
             $_SESSION['user_id'] = $user['user_id'];
             $_SESSION['user_role'] = $user['user_role_id'];
             $_SESSION['user_name'] = trim($user['user_first_name'] . ' ' . $user['user_last_name']);
+            $_SESSION['needs_password_change'] = (int) ($user['needs_password_change'] ?? 1);
 
             return true;
         }
@@ -68,16 +69,33 @@ class User
         return $stmt->rowCount() > 0;
     }
 
+    public function generateRandomPassword(int $length = 10): string
+    {
+        $characters = '0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ';
+        $maxIndex = strlen($characters) - 1;
+        $password = '';
+
+        for ($index = 0; $index < $length; $index++) {
+            $password .= $characters[random_int(0, $maxIndex)];
+        }
+
+        return $password;
+    }
+
     public function createUser(array $data): bool
     {
         if (session_status() !== PHP_SESSION_ACTIVE) {
             session_start();
         }
 
-        $hashedPassword = password_hash($data['password'], PASSWORD_BCRYPT);
+        $hashedPassword = $data['password_hash'] ?? password_hash((string) ($data['password'] ?? ''), PASSWORD_BCRYPT);
 
-        $sql = "INSERT INTO users (user_login, user_email, user_password, user_first_name, user_last_name, user_role_id, user_status, user_created_by)
-                VALUES (:login, :email, :password, :fname, :lname, :role, :status, :created_by)";
+        if (!$hashedPassword) {
+            return false;
+        }
+
+        $sql = "INSERT INTO users (user_login, user_email, user_password, needs_password_change, user_first_name, user_last_name, user_role_id, user_status, user_created_by)
+            VALUES (:login, :email, :password, :needs_password_change, :fname, :lname, :role, :status, :created_by)";
 
         $stmt = $this->pdo->prepare($sql);
 
@@ -85,11 +103,34 @@ class User
             'login' => $data['login'],
             'email' => $data['email'],
             'password' => $hashedPassword,
+            'needs_password_change' => 1,
             'fname' => $data['first_name'],
             'lname' => $data['last_name'],
             'role' => $data['role_id'],
             'status' => $data['status'],
             'created_by' => $_SESSION['user_id'] ?? null,
+        ]);
+    }
+
+    public function updatePassword(int $userId, string $newPassword): bool
+    {
+        $hashedPassword = password_hash($newPassword, PASSWORD_BCRYPT);
+        if (!$hashedPassword) {
+            return false;
+        }
+
+        $stmt = $this->pdo->prepare(
+            "UPDATE users
+             SET user_password = :password,
+                 needs_password_change = 0,
+                 user_modified_by = :modifier_id
+             WHERE user_id = :user_id"
+        );
+
+        return $stmt->execute([
+            'password' => $hashedPassword,
+            'modifier_id' => $userId,
+            'user_id' => $userId,
         ]);
     }
 

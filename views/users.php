@@ -17,6 +17,7 @@ $users = $userObj->getAllUsers();
 $messages = [
   'success' => [
     'user_added' => 'Employee added successfully.',
+    'user_added_mail_failed' => 'Employee added, but credential email could not be sent.',
     'user_updated' => 'Employee updated successfully.',
     'deactivated' => 'Employee deactivated successfully.',
   ],
@@ -208,8 +209,9 @@ $editModals = [];
             </select>
           </div>
           <div class="col-12">
-            <label class="form-label" for="password">Password</label>
-            <input type="password" id="password" name="password" class="form-control" required>
+            <div class="alert alert-info mb-0">
+              A secure temporary password will be generated automatically and sent to the employee email.
+            </div>
           </div>
           <div class="col-12">
             <label class="form-label" for="status">Status</label>
@@ -236,6 +238,25 @@ $editModals = [];
 
 <script>
 document.addEventListener('DOMContentLoaded', function () {
+  const namePattern = /^[A-Za-z][A-Za-z\s'-]{1,49}$/;
+  const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  const usernamePattern = /^[A-Za-z0-9_]{3,30}$/;
+
+  function isValidCreatePayload(payload) {
+    return namePattern.test(payload.first_name)
+      && namePattern.test(payload.last_name)
+      && emailPattern.test(payload.email)
+      && usernamePattern.test(payload.login)
+      && payload.role_id > 0;
+  }
+
+  function isValidUpdatePayload(payload) {
+    return namePattern.test(payload.first_name)
+      && namePattern.test(payload.last_name)
+      && emailPattern.test(payload.email)
+      && payload.role_id > 0;
+  }
+
   const createUserForm = document.getElementById('createUserForm');
   if (createUserForm) {
     createUserForm.addEventListener('submit', async function (event) {
@@ -248,11 +269,10 @@ document.addEventListener('DOMContentLoaded', function () {
         email: String(formData.get('email') || '').trim(),
         login: String(formData.get('login') || '').trim(),
         role_id: Number(formData.get('role_id') || 0),
-        password: String(formData.get('password') || '').trim(),
         status: String(formData.get('status') || '<?php echo Constants::USER_STATUS_ACTIVE; ?>')
       };
 
-      if (!payload.first_name || !payload.last_name || !payload.email || !payload.login || payload.role_id <= 0 || !payload.password) {
+      if (!isValidCreatePayload(payload)) {
         window.location.href = '<?php echo APP_BASE; ?>/users?error=empty_fields';
         return;
       }
@@ -264,6 +284,11 @@ document.addEventListener('DOMContentLoaded', function () {
         });
 
         if (response.success) {
+          if (response.mail_sent === false) {
+            window.location.href = '<?php echo APP_BASE; ?>/users?success=user_added_mail_failed';
+            return;
+          }
+
           window.location.href = '<?php echo APP_BASE; ?>/users?success=user_added';
           return;
         }
@@ -294,7 +319,7 @@ document.addEventListener('DOMContentLoaded', function () {
         status: String(formData.get('status') || '<?php echo Constants::USER_STATUS_ACTIVE; ?>')
       };
 
-      if (userId <= 0 || !payload.first_name || !payload.last_name || !payload.email || payload.role_id <= 0) {
+      if (userId <= 0 || !isValidUpdatePayload(payload)) {
         window.location.href = '<?php echo APP_BASE; ?>/users?error=empty_fields';
         return;
       }

@@ -14,6 +14,14 @@ if (!isset($_SESSION['user_id']) && !in_array($route, ['login', 'api'], true)) {
     $route = 'login';
 }
 
+if (isset($_SESSION['user_id'])
+    && (int) ($_SESSION['needs_password_change'] ?? 0) === 1
+    && !in_array($route, ['change-password', 'logout', 'api'], true)
+) {
+    header('Location: ' . APP_BASE . '/change-password');
+    exit;
+}
+
 if ($isApi) {
     if (!isset($_SESSION['user_id'])) {
         http_response_code(401);
@@ -63,18 +71,55 @@ if ($route === 'logout') {
     exit;
 }
 
+if ($route === 'change-password' && ($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST') {
+    if (!isset($_SESSION['user_id'])) {
+        header('Location: ' . APP_BASE . '/login');
+        exit;
+    }
+
+    if (!isset($_POST['csrf_token'], $_SESSION['csrf_token']) || !hash_equals((string) $_SESSION['csrf_token'], (string) $_POST['csrf_token'])) {
+        header('Location: ' . APP_BASE . '/change-password?error=csrf');
+        exit;
+    }
+
+    $newPassword = trim((string) ($_POST['new_password'] ?? ''));
+    $confirmPassword = trim((string) ($_POST['confirm_password'] ?? ''));
+
+    if ($newPassword === '' || $confirmPassword === '' || strlen($newPassword) < 8) {
+        header('Location: ' . APP_BASE . '/change-password?error=invalid');
+        exit;
+    }
+
+    if ($newPassword !== $confirmPassword) {
+        header('Location: ' . APP_BASE . '/change-password?error=mismatch');
+        exit;
+    }
+
+    $user = new User($pdo);
+    $userId = (int) ($_SESSION['user_id'] ?? 0);
+
+    if ($userId <= 0 || !$user->updatePassword($userId, $newPassword)) {
+        header('Location: ' . APP_BASE . '/change-password?error=failed');
+        exit;
+    }
+
+    $_SESSION['needs_password_change'] = 0;
+    header('Location: ' . APP_BASE . '/dashboard?success=password_changed');
+    exit;
+}
+
 $viewFile = APP_ROOT . '/views/' . $route . '.php';
 if (!is_file($viewFile)) {
     http_response_code(404);
     $viewFile = APP_ROOT . '/views/404.php';
 }
 
-if (!$isAjax && $route !== 'login') {
+if (!$isAjax && !in_array($route, ['login', 'change-password'], true)) {
     require APP_ROOT . '/src/includes/header.php';
 }
 
 require $viewFile;
 
-if (!$isAjax && $route !== 'login') {
+if (!$isAjax && !in_array($route, ['login', 'change-password'], true)) {
     require APP_ROOT . '/src/includes/footer.php';
 }

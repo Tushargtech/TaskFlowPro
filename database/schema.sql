@@ -1,5 +1,3 @@
-
-
 CREATE TABLE user_roles (
     role_id INT PRIMARY KEY AUTO_INCREMENT,
     role_title VARCHAR(50) NOT NULL,
@@ -12,6 +10,7 @@ CREATE TABLE users (
     user_email VARCHAR(100) NOT NULL UNIQUE,
     user_phone VARCHAR(15),
     user_password VARCHAR(255) NOT NULL,
+    needs_password_change TINYINT(1) NOT NULL DEFAULT 1,
     user_first_name VARCHAR(50),
     user_last_name VARCHAR(50),
     user_role_id INT,
@@ -32,8 +31,8 @@ INSERT INTO user_roles (role_id, role_title, role_status) VALUES
 (1, 'Admin', 'Active'),
 (2, 'User', 'Active');
 
-INSERT INTO users (user_login, user_email, user_password, user_role_id) VALUES 
-('admin_user', 'admin@taskflow.com', '$2y$10$bPBuJWImOODXwS.U5AHZCOh7jGbR2bhRNem3I9zuk9ZcP6OMbnY6O', 1);
+INSERT INTO users (user_login, user_email, user_password, needs_password_change, user_role_id) VALUES 
+('admin_user', 'admin@taskflow.com', '$2y$10$bPBuJWImOODXwS.U5AHZCOh7jGbR2bhRNem3I9zuk9ZcP6OMbnY6O', 0, 1);
 
 CREATE TABLE user_login_records (
     login_id INT PRIMARY KEY AUTO_INCREMENT,

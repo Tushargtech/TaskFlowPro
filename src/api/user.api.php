@@ -18,17 +18,24 @@ function handleUsers(string $method, ?int $id, User $userObj): void
         case Constants::METHOD_POST:
             requireAdmin();
             $input = readJsonInput();
-            validateRequired($input, ['login', 'email', 'password', 'first_name', 'last_name', 'role_id']);
+            validateRequired($input, ['login', 'email', 'first_name', 'last_name', 'role_id']);
             
             $username = trim($input['login']);
             if ($userObj->usernameExists($username)) {
                 respond(['success' => false, 'message' => 'Username already exists. Please choose a different username.'], 422);
             }
             
+            $plainPassword = $userObj->generateRandomPassword(10);
+            $hashedPassword = password_hash($plainPassword, PASSWORD_BCRYPT);
+
+            if (!$hashedPassword) {
+                respond(['success' => false, 'message' => 'Unable to generate password.'], 500);
+            }
+
             $payload = [
                 'login' => $username,
                 'email' => $input['email'],
-                'password' => $input['password'],
+                'password_hash' => $hashedPassword,
                 'first_name' => $input['first_name'],
                 'last_name' => $input['last_name'],
                 'role_id' => (int) $input['role_id'],
@@ -36,7 +43,16 @@ function handleUsers(string $method, ?int $id, User $userObj): void
             ];
 
             $success = $userObj->createUser($payload);
-            respond(['success' => $success], $success ? 201 : 400);
+
+            if (!$success) {
+                respond(['success' => false], 400);
+            }
+
+            require_once APP_ROOT . '/libraries/MailHelper.php';
+            $fullName = trim((string) ($input['first_name'] ?? '') . ' ' . (string) ($input['last_name'] ?? ''));
+            $mailSent = MailHelper::sendPassword((string) $input['email'], $fullName, $plainPassword);
+
+            respond(['success' => true, 'mail_sent' => $mailSent], 201);
             break;
         case Constants::METHOD_PUT:
             requireAdmin();

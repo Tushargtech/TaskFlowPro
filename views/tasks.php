@@ -436,6 +436,38 @@ async function deleteTask(taskId) {
 }
 
 document.addEventListener('DOMContentLoaded', function () {
+  const allowedStatuses = new Set([
+    '<?php echo Constants::TASK_STATUS_DUE; ?>',
+    '<?php echo Constants::TASK_STATUS_COMPLETED; ?>',
+    '<?php echo Constants::TASK_STATUS_INACTIVE; ?>'
+  ]);
+
+  function isValidDateNotPast(dateString) {
+    if (!dateString) {
+      return false;
+    }
+
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const due = new Date(dateString + 'T00:00:00');
+    return !Number.isNaN(due.getTime()) && due >= today;
+  }
+
+  function isValidCreateTaskPayload(payload) {
+    return payload.title.length >= 3
+      && payload.project_id > 0
+      && payload.assigned_to > 0
+      && isValidDateNotPast(payload.due_date);
+  }
+
+  function isValidUpdateTaskPayload(payload) {
+    return payload.title.length >= 3
+      && payload.project_id > 0
+      && payload.assigned_to > 0
+      && isValidDateNotPast(payload.due_date)
+      && allowedStatuses.has(payload.status);
+  }
+
   const createTaskForm = document.getElementById('createTaskForm');
   if (createTaskForm) {
     createTaskForm.addEventListener('submit', async function (event) {
@@ -450,7 +482,7 @@ document.addEventListener('DOMContentLoaded', function () {
         due_date: String(formData.get('due_date') || '').trim()
       };
 
-      if (!payload.title || payload.project_id <= 0 || payload.assigned_to <= 0 || !payload.due_date) {
+      if (!isValidCreateTaskPayload(payload)) {
         window.location.href = '<?php echo APP_BASE; ?>/tasks?error=invalid_input';
         return;
       }
@@ -488,7 +520,7 @@ document.addEventListener('DOMContentLoaded', function () {
         status: String(formData.get('task_status') || '<?php echo Constants::TASK_STATUS_DUE; ?>')
       };
 
-      if (taskId <= 0 || !payload.title || payload.project_id <= 0 || payload.assigned_to <= 0 || !payload.due_date || !payload.status) {
+      if (taskId <= 0 || !isValidUpdateTaskPayload(payload)) {
         window.location.href = '<?php echo APP_BASE; ?>/tasks?error=invalid_input';
         return;
       }

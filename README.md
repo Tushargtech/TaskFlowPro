@@ -59,8 +59,8 @@
   - email: admin@taskflow.com
   - Password: admin123
 - User
-  - email: kush@ks.com
-  - password: kush@123
+  - email: taskflow53@gmail.com
+  - password: tush@123
 
 ## API Endpoints
 - GET /api/users
@@ -84,7 +84,6 @@
 - No pagination or server-side filtering for large user/project/task lists.
 - No file uploads or task attachments.
 - No email or in-app notifications for assignments and due dates.
-- Audit trail is limited to login records; other actions are not logged.
 - Mobile layout is responsive and functional, but only basic cross-device testing has been performed.
 
 ## Screenshots

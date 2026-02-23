@@ -181,6 +181,12 @@ $editModals = [];
 
 <script>
 document.addEventListener('DOMContentLoaded', function () {
+  const allowedStatuses = new Set(['<?php echo Constants::PROJECT_STATUS_ACTIVE; ?>', '<?php echo Constants::PROJECT_STATUS_INACTIVE; ?>']);
+
+  function isValidProjectPayload(payload) {
+    return payload.title.length >= 3 && payload.title.length <= 100 && allowedStatuses.has(payload.status);
+  }
+
   const createProjectForm = document.getElementById('createProjectForm');
   if (createProjectForm) {
     createProjectForm.addEventListener('submit', async function (event) {
@@ -193,7 +199,7 @@ document.addEventListener('DOMContentLoaded', function () {
         status: String(formData.get('project_status') || '<?php echo Constants::PROJECT_STATUS_ACTIVE; ?>')
       };
 
-      if (!payload.title) {
+      if (!isValidProjectPayload(payload)) {
         window.location.href = '<?php echo APP_BASE; ?>/projects?error=invalid_input';
         return;
       }
@@ -228,7 +234,7 @@ document.addEventListener('DOMContentLoaded', function () {
         status: String(formData.get('project_status') || '<?php echo Constants::PROJECT_STATUS_ACTIVE; ?>')
       };
 
-      if (projectId <= 0 || !payload.title) {
+      if (projectId <= 0 || !isValidProjectPayload(payload)) {
         window.location.href = '<?php echo APP_BASE; ?>/projects?error=invalid_input';
         return;
       }
