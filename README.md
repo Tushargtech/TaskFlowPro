@@ -1,10 +1,9 @@
 # TaskFlow Pro - Mini ERP & Task Management System
 
 ## Tech Stack
-- **Language:** PHP 8.x (OOP with strict types)
-- **Database:** MySQL 5.7+
-- **Frontend:** HTML5, CSS3, Bootstrap 5.3.3
-- **Icons:** Bootstrap Icons 1.11.3
+- **Language:** PHP
+- **Database:** MySQL
+- **Frontend:** HTML5, CSS3, Bootstrap
 - **Server:** Apache (XAMPP/LAMPP Stack)
 - **Authentication:** BCrypt password hashing, PDO prepared statements
 
@@ -84,7 +83,6 @@
 - No pagination or server-side filtering for large user/project/task lists.
 - No file uploads or task attachments.
 - No email or in-app notifications for assignments and due dates.
-- Mobile layout is responsive and functional, but only basic cross-device testing has been performed.
 
 ## Screenshots
 

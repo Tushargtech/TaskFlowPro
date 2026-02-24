@@ -5,13 +5,16 @@ declare(strict_types=1);
 require_once __DIR__ . '/../config/db.php';
 require_once __DIR__ . '/../src/classes/Constants.php';
 
-$userCount = (int) $pdo->query('SELECT COUNT(*) FROM users')->fetchColumn();
+$isAdmin = (int) ($_SESSION['user_role'] ?? 0) === 1;
+$userCount = $isAdmin ? (int) $pdo->query('SELECT COUNT(*) FROM users')->fetchColumn() : 0;
 $projectCount = (int) $pdo->query('SELECT COUNT(*) FROM projects')->fetchColumn();
 $taskCount = (int) $pdo->query("SELECT COUNT(*) FROM tasks WHERE task_status = '" . Constants::TASK_STATUS_DUE . "'")->fetchColumn();
+$cardCol = $isAdmin ? 'col-md-4' : 'col-md-6';
 ?>
 
       <div class="row g-4 text-center">
-        <div class="col-md-4">
+        <?php if ($isAdmin): ?>
+        <div class="<?php echo $cardCol; ?>">
           <div class="card bg-primary text-white h-100 shadow-sm">
             <div class="card-body">
               <h5 class="card-title">Total Employees</h5>
@@ -19,7 +22,8 @@ $taskCount = (int) $pdo->query("SELECT COUNT(*) FROM tasks WHERE task_status = '
             </div>
           </div>
         </div>
-        <div class="col-md-4">
+        <?php endif; ?>
+        <div class="<?php echo $cardCol; ?>">
           <div class="card bg-success text-white h-100 shadow-sm">
             <div class="card-body">
               <h5 class="card-title">Active Projects</h5>
@@ -27,7 +31,7 @@ $taskCount = (int) $pdo->query("SELECT COUNT(*) FROM tasks WHERE task_status = '
             </div>
           </div>
         </div>
-        <div class="col-md-4">
+        <div class="<?php echo $cardCol; ?>">
           <div class="card bg-warning text-dark h-100 shadow-sm">
             <div class="card-body">
               <h5 class="card-title">Pending Tasks</h5>
