@@ -73,6 +73,7 @@ $messages = [
     'unauthorized' => 'You are not authorized to perform that action.',
     'invalid_input' => 'Please complete all required fields before submitting.',
     'past_date' => 'Due date cannot be in the past.',
+    'task_name_exists' => 'Task name already exists in this project. Please choose a different name.',
     'task_failed' => 'Unable to assign the task. Please try again.',
     'task_exception' => 'Unexpected error assigning the task.',
     'missing_task' => 'Task reference was missing from the request.',
@@ -470,6 +471,14 @@ document.addEventListener('DOMContentLoaded', function () {
 
   const createTaskForm = document.getElementById('createTaskForm');
   if (createTaskForm) {
+    const dueDateInput = createTaskForm.querySelector('input[name="due_date"]');
+    if (dueDateInput) {
+      const today = new Date();
+      const month = String(today.getMonth() + 1).padStart(2, '0');
+      const day = String(today.getDate()).padStart(2, '0');
+      dueDateInput.min = `${today.getFullYear()}-${month}-${day}`;
+    }
+
     createTaskForm.addEventListener('submit', async function (event) {
       event.preventDefault();
 
@@ -483,6 +492,11 @@ document.addEventListener('DOMContentLoaded', function () {
       };
 
       if (!isValidCreateTaskPayload(payload)) {
+        if (!isValidDateNotPast(payload.due_date)) {
+          window.location.href = '<?php echo APP_BASE; ?>/tasks?error=past_date';
+          return;
+        }
+
         window.location.href = '<?php echo APP_BASE; ?>/tasks?error=invalid_input';
         return;
       }
@@ -500,12 +514,24 @@ document.addEventListener('DOMContentLoaded', function () {
 
         window.location.href = '<?php echo APP_BASE; ?>/tasks?error=task_failed';
       } catch (error) {
+        if (error.message === 'task_name_exists') {
+          window.location.href = '<?php echo APP_BASE; ?>/tasks?error=task_name_exists';
+          return;
+        }
         window.location.href = '<?php echo APP_BASE; ?>/tasks?error=task_exception';
       }
     });
   }
 
   document.querySelectorAll('.task-update-form').forEach(function (updateForm) {
+    const dueDateInput = updateForm.querySelector('input[name="task_due_date"]');
+    if (dueDateInput) {
+      const today = new Date();
+      const month = String(today.getMonth() + 1).padStart(2, '0');
+      const day = String(today.getDate()).padStart(2, '0');
+      dueDateInput.min = `${today.getFullYear()}-${month}-${day}`;
+    }
+
     updateForm.addEventListener('submit', async function (event) {
       event.preventDefault();
 
@@ -521,6 +547,11 @@ document.addEventListener('DOMContentLoaded', function () {
       };
 
       if (taskId <= 0 || !isValidUpdateTaskPayload(payload)) {
+        if (!isValidDateNotPast(payload.due_date)) {
+          window.location.href = '<?php echo APP_BASE; ?>/tasks?error=past_date';
+          return;
+        }
+
         window.location.href = '<?php echo APP_BASE; ?>/tasks?error=invalid_input';
         return;
       }
@@ -538,6 +569,10 @@ document.addEventListener('DOMContentLoaded', function () {
 
         window.location.href = '<?php echo APP_BASE; ?>/tasks?error=task_update_failed';
       } catch (error) {
+        if (error.message === 'task_name_exists') {
+          window.location.href = '<?php echo APP_BASE; ?>/tasks?error=task_name_exists';
+          return;
+        }
         window.location.href = '<?php echo APP_BASE; ?>/tasks?error=task_update_failed';
       }
     });

@@ -14,6 +14,18 @@ function handleTasks(string $method, ?int $id, Task $taskObj): void
             requireAdmin();
             $input = readJsonInput();
             validateRequired($input, ['title', 'project_id', 'assigned_to', 'due_date']);
+            if ($taskObj->taskNameExistsInProject($input['title'], (int) $input['project_id'])) {
+                respond(['success' => false, 'message' => 'task_name_exists'], 422);
+            }
+            $dueDateString = trim((string) ($input['due_date'] ?? ''));
+            $dueDate = DateTimeImmutable::createFromFormat('Y-m-d', $dueDateString);
+            if ($dueDate === false) {
+                respond(['success' => false, 'message' => 'invalid_input'], 422);
+            }
+            $today = new DateTimeImmutable('today');
+            if ($dueDate < $today) {
+                respond(['success' => false, 'message' => 'past_date'], 422);
+            }
             $input['created_by'] = (int) ($_SESSION['user_id'] ?? 0);
             $success = $taskObj->createTask($input);
             respond(['success' => $success], $success ? 201 : 400);
@@ -27,6 +39,18 @@ function handleTasks(string $method, ?int $id, Task $taskObj): void
             if (isset($input['title'])) {
                 requireAdmin();
                 validateRequired($input, ['title', 'project_id', 'assigned_to', 'due_date', 'status']);
+                if ($taskObj->taskNameExistsInProjectForOther($input['title'], (int) $input['project_id'], $id)) {
+                    respond(['success' => false, 'message' => 'task_name_exists'], 422);
+                }
+                $dueDateString = trim((string) ($input['due_date'] ?? ''));
+                $dueDate = DateTimeImmutable::createFromFormat('Y-m-d', $dueDateString);
+                if ($dueDate === false) {
+                    respond(['success' => false, 'message' => 'invalid_input'], 422);
+                }
+                $today = new DateTimeImmutable('today');
+                if ($dueDate < $today) {
+                    respond(['success' => false, 'message' => 'past_date'], 422);
+                }
                 $payload = [
                     'id' => $id,
                     'title' => $input['title'],

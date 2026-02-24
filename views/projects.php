@@ -16,6 +16,7 @@ $messages = [
     ],
     'error' => [
         Constants::MSG_INVALID_INPUT => 'Project title is required.',
+        'project_name_exists' => 'Project name already exists. Please choose a different name.',
         'create_failed' => 'Unable to create the project. Please try again.',
         'create_exception' => 'Unexpected error creating the project.',
         Constants::MSG_UNAUTHORIZED => 'You are not authorized to perform that action.',
@@ -217,6 +218,10 @@ document.addEventListener('DOMContentLoaded', function () {
 
         window.location.href = '<?php echo APP_BASE; ?>/projects?error=create_failed';
       } catch (error) {
+        if (error.message === 'project_name_exists') {
+          window.location.href = '<?php echo APP_BASE; ?>/projects?error=project_name_exists';
+          return;
+        }
         window.location.href = '<?php echo APP_BASE; ?>/projects?error=create_exception';
       }
     });
@@ -252,6 +257,10 @@ document.addEventListener('DOMContentLoaded', function () {
 
         window.location.href = '<?php echo APP_BASE; ?>/projects?error=update_failed';
       } catch (error) {
+        if (error.message === 'project_name_exists') {
+          window.location.href = '<?php echo APP_BASE; ?>/projects?error=project_name_exists';
+          return;
+        }
         window.location.href = '<?php echo APP_BASE; ?>/projects?error=update_exception';
       }
     });

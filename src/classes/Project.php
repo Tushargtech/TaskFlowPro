@@ -71,4 +71,20 @@ class Project
             'id' => $id,
         ]);
     }
+
+    public function projectNameExists(string $title): bool
+    {
+        $stmt = $this->pdo->prepare('SELECT 1 FROM projects WHERE project_title = ? AND project_status = "Active"');
+        $stmt->execute([$title]);
+
+        return $stmt->rowCount() > 0;
+    }
+
+    public function projectNameExistsForOther(string $title, int $projectId): bool
+    {
+        $stmt = $this->pdo->prepare('SELECT 1 FROM projects WHERE project_title = ? AND project_id != ? AND project_status = "Active"');
+        $stmt->execute([$title, $projectId]);
+
+        return $stmt->rowCount() > 0;
+    }
 }

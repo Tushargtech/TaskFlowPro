@@ -30,7 +30,9 @@ if ($isApi) {
         exit;
     }
 
-    require_once APP_ROOT . '/controllers/ApiController.php';
+    $apiPath = implode('/', array_slice(explode('/', trim((string) ($_GET['url'] ?? ''), '/')), 1));
+    $_SERVER['PATH_INFO'] = '/' . $apiPath;
+    require_once APP_ROOT . '/controllers/api.php';
     exit;
 }
 

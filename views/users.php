@@ -24,6 +24,8 @@ $messages = [
   'error' => [
     'empty_fields' => 'Please fill in all required fields.',
     'username_exists' => 'Username already exists. Please choose a different username.',
+    'email_exists' => 'Email already exists. Please choose a different email.',
+    'super_admin_role' => 'Super admin role cannot be changed.',
     'failed' => 'Operation failed. Please try again.',
     'creation_failed' => 'Could not create employee. Possibly duplicate email or username.',
     'update_failed' => 'Could not update employee. Please review the details.',
@@ -87,6 +89,7 @@ $editModals = [];
           $roleTitle = htmlspecialchars($user['role_title'] ?? '', ENT_QUOTES, 'UTF-8');
           $isActive = ($user['user_status'] === Constants::USER_STATUS_ACTIVE);
           $statusBadge = $isActive ? 'bg-success' : 'bg-danger';
+          $isSuperAdmin = (strtolower($user['user_email'] ?? '') === 'admin@taskflow.com');
 
           ob_start();
           ?>
@@ -115,17 +118,23 @@ $editModals = [];
                     </div>
                     <div class="col-md-6">
                       <label class="form-label" for="edit_status_<?php echo $userIdEsc; ?>">Status</label>
-                      <select id="edit_status_<?php echo $userIdEsc; ?>" name="status" class="form-select">
+                      <select id="edit_status_<?php echo $userIdEsc; ?>" name="status" class="form-select" <?php echo $isSuperAdmin ? 'disabled' : ''; ?>>
                         <option value="<?php echo Constants::USER_STATUS_ACTIVE; ?>" <?php echo $user['user_status'] === Constants::USER_STATUS_ACTIVE ? 'selected' : ''; ?>><?php echo Constants::USER_STATUS_ACTIVE; ?></option>
                         <option value="<?php echo Constants::USER_STATUS_INACTIVE; ?>" <?php echo $user['user_status'] === Constants::USER_STATUS_INACTIVE ? 'selected' : ''; ?>><?php echo Constants::USER_STATUS_INACTIVE; ?></option>
                       </select>
+                      <?php if ($isSuperAdmin): ?>
+                        <div class="form-text">Super admin status cannot be changed.</div>
+                      <?php endif; ?>
                     </div>
                     <div class="col-md-6">
                       <label class="form-label" for="edit_role_<?php echo $userIdEsc; ?>">Role</label>
-                      <select id="edit_role_<?php echo $userIdEsc; ?>" name="role_id" class="form-select">
+                      <select id="edit_role_<?php echo $userIdEsc; ?>" name="role_id" class="form-select" <?php echo $isSuperAdmin ? 'disabled' : ''; ?>>
                         <option value="<?php echo Constants::ROLE_ADMIN; ?>" <?php echo ((int) ($user['user_role_id'] ?? 0) === Constants::ROLE_ADMIN) ? 'selected' : ''; ?>><?php echo Constants::getRoleName(Constants::ROLE_ADMIN); ?></option>
                         <option value="<?php echo Constants::ROLE_USER; ?>" <?php echo ((int) ($user['user_role_id'] ?? 0) === Constants::ROLE_USER) ? 'selected' : ''; ?>><?php echo Constants::getRoleName(Constants::ROLE_USER); ?></option>
                       </select>
+                      <?php if ($isSuperAdmin): ?>
+                        <div class="form-text">Super admin role cannot be changed.</div>
+                      <?php endif; ?>
                     </div>
                   </div>
                 </div>
@@ -157,7 +166,7 @@ $editModals = [];
               <i class="bi bi-pencil"></i>
             </button>
             <?php endif; ?>
-            <?php if (checkPermission($pdo, 'Edit_User')): ?>
+            <?php if (checkPermission($pdo, 'Edit_User') && !$isSuperAdmin): ?>
             <button
               type="button"
               class="btn btn-sm btn-outline-danger user-deactivate-btn"
@@ -293,13 +302,26 @@ document.addEventListener('DOMContentLoaded', function () {
           return;
         }
 
-        if (response.message && response.message.includes('already exists')) {
+        if (response.message === 'email_exists') {
+          window.location.href = '<?php echo APP_BASE; ?>/users?error=email_exists';
+          return;
+        }
+
+        if (response.message === 'username_exists') {
           window.location.href = '<?php echo APP_BASE; ?>/users?error=username_exists';
           return;
         }
 
         window.location.href = '<?php echo APP_BASE; ?>/users?error=creation_failed';
       } catch (error) {
+        if (error.message === 'email_exists') {
+          window.location.href = '<?php echo APP_BASE; ?>/users?error=email_exists';
+          return;
+        }
+        if (error.message === 'username_exists') {
+          window.location.href = '<?php echo APP_BASE; ?>/users?error=username_exists';
+          return;
+        }
         window.location.href = '<?php echo APP_BASE; ?>/users?error=failed';
       }
     });
@@ -335,8 +357,26 @@ document.addEventListener('DOMContentLoaded', function () {
           return;
         }
 
+        if (response.message === 'email_exists') {
+          window.location.href = '<?php echo APP_BASE; ?>/users?error=email_exists';
+          return;
+        }
+
+        if (response.message === 'super_admin_role') {
+          window.location.href = '<?php echo APP_BASE; ?>/users?error=super_admin_role';
+          return;
+        }
+
         window.location.href = '<?php echo APP_BASE; ?>/users?error=update_failed';
       } catch (error) {
+        if (error.message === 'email_exists') {
+          window.location.href = '<?php echo APP_BASE; ?>/users?error=email_exists';
+          return;
+        }
+        if (error.message === 'super_admin_role') {
+          window.location.href = '<?php echo APP_BASE; ?>/users?error=super_admin_role';
+          return;
+        }
         window.location.href = '<?php echo APP_BASE; ?>/users?error=failed';
       }
     });

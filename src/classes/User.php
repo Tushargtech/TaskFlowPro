@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 class User
 {
+    private const SUPER_ADMIN_EMAIL = 'admin@taskflow.com';
     private PDO $pdo;
 
     public function __construct(PDO $pdo)
@@ -66,6 +67,13 @@ class User
     {
         $stmt = $this->pdo->prepare("SELECT 1 FROM users WHERE user_login = ?");
         $stmt->execute([$username]);
+        return $stmt->rowCount() > 0;
+    }
+
+    public function emailExistsForOther(string $email, int $excludeId): bool
+    {
+        $stmt = $this->pdo->prepare('SELECT 1 FROM users WHERE user_email = ? AND user_id <> ?');
+        $stmt->execute([$email, $excludeId]);
         return $stmt->rowCount() > 0;
     }
 
@@ -136,6 +144,10 @@ class User
 
     public function deactivateUser(int $id, int $modifierId): bool
     {
+        if ($this->isSuperAdmin($id)) {
+            return false;
+        }
+
         $stmt = $this->pdo->prepare(
             "UPDATE users SET user_status = 'Inactive', user_modified_by = ? WHERE user_id = ?"
         );
@@ -145,6 +157,13 @@ class User
 
     public function updateUser(array $data): bool
     {
+        $requestedStatus = (string) ($data['status'] ?? '');
+        $targetId = (int) ($data['id'] ?? 0);
+
+        if ($requestedStatus === 'Inactive' && $targetId > 0 && $this->isSuperAdmin($targetId)) {
+            return false;
+        }
+
         $sql = "UPDATE users SET
                 user_first_name = :fname,
                 user_last_name = :lname,
@@ -157,6 +176,15 @@ class User
         $stmt = $this->pdo->prepare($sql);
 
         return $stmt->execute($data);
+    }
+
+    public function isSuperAdmin(int $id): bool
+    {
+        $stmt = $this->pdo->prepare('SELECT user_email FROM users WHERE user_id = ?');
+        $stmt->execute([$id]);
+        $email = (string) ($stmt->fetchColumn() ?: '');
+
+        return strtolower($email) === self::SUPER_ADMIN_EMAIL;
     }
 
     public function logLogin(int $userId): bool

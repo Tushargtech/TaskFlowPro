@@ -147,4 +147,20 @@ class Task
             'taskId' => $taskId,
         ]);
     }
+
+    public function taskNameExistsInProject(string $title, int $projectId): bool
+    {
+        $stmt = $this->pdo->prepare('SELECT 1 FROM tasks WHERE task_title = ? AND task_project_id = ? AND task_status != "Deleted"');
+        $stmt->execute([$title, $projectId]);
+
+        return $stmt->rowCount() > 0;
+    }
+
+    public function taskNameExistsInProjectForOther(string $title, int $projectId, int $taskId): bool
+    {
+        $stmt = $this->pdo->prepare('SELECT 1 FROM tasks WHERE task_title = ? AND task_project_id = ? AND task_id != ? AND task_status != "Deleted"');
+        $stmt->execute([$title, $projectId, $taskId]);
+
+        return $stmt->rowCount() > 0;
+    }
 }

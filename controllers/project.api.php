@@ -19,6 +19,9 @@ function handleProjects(string $method, ?int $id, Project $projectObj): void
             if ($title === '' || $createdBy <= 0) {
                 respond(['message' => 'Invalid input'], 422);
             }
+            if ($projectObj->projectNameExists($title)) {
+                respond(['success' => false, 'message' => 'project_name_exists'], 422);
+            }
             $success = $projectObj->createProject($title, $description, $createdBy, $status);
             respond(['success' => $success], $success ? 201 : 400);
             break;
@@ -31,6 +34,9 @@ function handleProjects(string $method, ?int $id, Project $projectObj): void
             $input['id'] = $id;
             if (!isset($input['title'])) {
                 respond(['message' => 'Invalid input'], 422);
+            }
+            if ($projectObj->projectNameExistsForOther($input['title'], $id)) {
+                respond(['success' => false, 'message' => 'project_name_exists'], 422);
             }
             $success = $projectObj->updateProject($input);
             respond(['success' => $success]);

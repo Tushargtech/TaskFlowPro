@@ -4,11 +4,11 @@ declare(strict_types=1);
 
 header('Content-Type: application/json');
 
-require_once __DIR__ . '/../../config/db.php';
-require_once __DIR__ . '/../classes/Constants.php';
-require_once __DIR__ . '/../classes/User.php';
-require_once __DIR__ . '/../classes/Project.php';
-require_once __DIR__ . '/../classes/Task.php';
+require_once APP_ROOT . '/config/db.php';
+require_once APP_ROOT . '/src/classes/Constants.php';
+require_once APP_ROOT . '/src/classes/User.php';
+require_once APP_ROOT . '/src/classes/Project.php';
+require_once APP_ROOT . '/src/classes/Task.php';
 require_once __DIR__ . '/user.api.php';
 require_once __DIR__ . '/project.api.php';
 require_once __DIR__ . '/task.api.php';

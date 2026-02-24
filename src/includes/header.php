@@ -71,12 +71,6 @@ $basePath = defined('APP_BASE') ? APP_BASE : '';
             </li>
           </ul>
           <div class="navbar-nav">
-            <form class="d-flex me-3" role="search">
-              <input class="form-control form-control-sm" type="search" placeholder="Search..." aria-label="Search">
-              <button class="btn btn-outline-light btn-sm ms-2" type="submit">
-                <i class="bi bi-search"></i>
-              </button>
-            </form>
             <a class="nav-link btn btn-outline-danger btn-sm ms-lg-2 text-white" href="<?php echo htmlspecialchars($basePath, ENT_QUOTES, 'UTF-8'); ?>/logout">Logout</a>
           </div>
         </div>

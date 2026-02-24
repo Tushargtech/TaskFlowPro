@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 function handleUsers(string $method, ?int $id, User $userObj): void
 {
+    global $pdo;
+
     switch ($method) {
         case Constants::METHOD_GET:
             if ($id !== null) {
@@ -22,7 +24,14 @@ function handleUsers(string $method, ?int $id, User $userObj): void
             
             $username = trim($input['login']);
             if ($userObj->usernameExists($username)) {
-                respond(['success' => false, 'message' => 'Username already exists. Please choose a different username.'], 422);
+                respond(['success' => false, 'message' => 'username_exists'], 422);
+            }
+            
+            $email = trim((string) ($input['email'] ?? ''));
+            $emailCheckStmt = $pdo->prepare('SELECT 1 FROM users WHERE user_email = ?');
+            $emailCheckStmt->execute([$email]);
+            if ($emailCheckStmt->rowCount() > 0) {
+                respond(['success' => false, 'message' => 'email_exists'], 422);
             }
             
             $plainPassword = $userObj->generateRandomPassword(10);
@@ -34,7 +43,7 @@ function handleUsers(string $method, ?int $id, User $userObj): void
 
             $payload = [
                 'login' => $username,
-                'email' => $input['email'],
+                'email' => $email,
                 'password_hash' => $hashedPassword,
                 'first_name' => $input['first_name'],
                 'last_name' => $input['last_name'],
@@ -45,7 +54,7 @@ function handleUsers(string $method, ?int $id, User $userObj): void
             $success = $userObj->createUser($payload);
 
             if (!$success) {
-                respond(['success' => false], 400);
+                respond(['success' => false, 'message' => 'email_exists'], 422);
             }
 
             require_once APP_ROOT . '/libraries/MailHelper.php';
@@ -61,10 +70,20 @@ function handleUsers(string $method, ?int $id, User $userObj): void
             }
             $input = readJsonInput();
             validateRequired($input, ['first_name', 'last_name', 'email', 'role_id', 'status']);
+            if ($userObj->isSuperAdmin($id) && ($input['status'] ?? '') === Constants::USER_STATUS_INACTIVE) {
+                respond(['success' => false, 'message' => 'Super admin cannot be set to inactive.'], 403);
+            }
+            if ($userObj->isSuperAdmin($id) && (int) ($input['role_id'] ?? 0) !== Constants::ROLE_ADMIN) {
+                respond(['success' => false, 'message' => 'super_admin_role'], 403);
+            }
+            $email = trim((string) ($input['email'] ?? ''));
+            if ($email !== '' && $userObj->emailExistsForOther($email, $id)) {
+                respond(['success' => false, 'message' => 'email_exists'], 422);
+            }
             $payload = [
                 'fname' => $input['first_name'],
                 'lname' => $input['last_name'],
-                'email' => $input['email'],
+                'email' => $email,
                 'role' => (int) $input['role_id'],
                 'status' => $input['status'],
                 'mod_by' => (int) ($_SESSION['user_id'] ?? 0),
@@ -72,12 +91,18 @@ function handleUsers(string $method, ?int $id, User $userObj): void
             ];
 
             $success = $userObj->updateUser($payload);
-            respond(['success' => $success]);
+            if (!$success && $email !== '' && $userObj->emailExistsForOther($email, $id)) {
+                respond(['success' => false, 'message' => 'email_exists'], 422);
+            }
+            respond(['success' => $success, 'message' => $success ? null : 'update_failed']);
             break;
         case Constants::METHOD_DELETE:
             requireAdmin();
             if ($id === null) {
                 respond(['message' => 'User id is required'], 400);
+            }
+            if ($userObj->isSuperAdmin($id)) {
+                respond(['success' => false, 'message' => 'Super admin cannot be deactivated.'], 403);
             }
             $modifierId = (int) ($_SESSION['user_id'] ?? 0);
             if ($modifierId <= 0) {
