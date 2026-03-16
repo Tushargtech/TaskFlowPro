@@ -1,0 +1,17 @@
+flowchart TD
+    A([User Request]) --> B[Validate Session and Input]
+    B --> C{Request Type}
+
+    C -->|Login| D[Authenticate User]
+    C -->|Data Actions| E[Run Business Logic]
+    C -->|Forgot or Reset Password| F[Token Flow and Email]
+    C -->|File Upload| G[Validate and Store File]
+
+    D --> H[(Database)]
+    E --> H
+    F --> H
+    G --> I[(File Storage)]
+
+    H --> J[Build Response]
+    I --> J
+    J --> K([Success or Error to User])

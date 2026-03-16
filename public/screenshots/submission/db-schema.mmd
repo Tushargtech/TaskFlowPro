@@ -1,0 +1,69 @@
+erDiagram
+    user_roles {
+        INT role_id PK
+        VARCHAR role_title
+    }
+
+    users {
+        INT user_id PK
+        VARCHAR user_email
+        VARCHAR user_password
+        INT user_role_id FK
+        ENUM user_status
+    }
+
+    user_login_records {
+        INT login_id PK
+        INT login_user_id FK
+        TIMESTAMP login_date_time
+        VARCHAR login_ip
+    }
+
+    user_access_rights {
+        INT right_id PK
+        VARCHAR right_title
+    }
+
+    user_role_mapping {
+        INT access_map_id PK
+        INT access_role_id FK
+        INT access_right_id FK
+    }
+
+    projects {
+        INT project_id PK
+        VARCHAR project_title
+        ENUM project_status
+    }
+
+    tasks {
+        INT task_id PK
+        VARCHAR task_title
+        INT task_project_id FK
+        INT task_assigned_to FK
+        ENUM task_status
+        DATE task_due_date
+    }
+
+    attachments {
+        INT attachment_id PK
+        ENUM entity_type
+        INT entity_id
+        INT uploaded_by FK
+    }
+
+    password_reset_tokens {
+        INT reset_id PK
+        INT user_id FK
+        CHAR token_hash
+        DATETIME expires_at
+    }
+
+    user_roles ||--o{ users : assigns
+    users ||--o{ user_login_records : logs
+    users ||--o{ password_reset_tokens : requests
+    user_roles ||--o{ user_role_mapping : has
+    user_access_rights ||--o{ user_role_mapping : mapped
+    projects ||--o{ tasks : contains
+    users ||--o{ tasks : assigned
+    users ||--o{ attachments : uploads
